@@ -296,7 +296,7 @@ def _reset_matches(event: pygame.event.Event) -> bool:
 def run() -> None:
     parser = argparse.ArgumentParser(description="Laboratoire 1986")
     parser.add_argument("--config", type=Path, default=Path(__file__).resolve().parents[1] / "config.json")
-    parser.add_argument("--test-mode", action="store_true", help="Accélère les délais à 10 % sans modifier le fichier de configuration")
+    parser.add_argument("--test-mode", action="store_true", help="Accélère les délais à 10 %% sans modifier le fichier de configuration")
     args = parser.parse_args()
     pygame.mixer.pre_init(frequency=44100, size=-16, channels=1)
     pygame.init()
@@ -390,4 +390,5 @@ def run() -> None:
             pygame.display.flip()
             clock.tick(FPS)
     finally:
+        _font.cache_clear()
         pygame.quit()

@@ -25,22 +25,44 @@ class TriggerConfigurationTest(unittest.TestCase):
                 config = load_config(path)
                 session = Session(config.session_seconds, config.possession_seconds,
                                   config.warning_seconds)
-                journeys.append([
+                journey = [
+                    session.advance(600, None),
+                    session.advance(0, "declencher_mystere"),
+                    session.advance(6, "declencher_mystere"),
+                    session.advance(2, None),
+                    session.advance(12, None),
+                    session.advance(10, None),
+                    session.advance(20, "declencher_mystere"),
+                    session.advance(0, "reinitialiser"),
+                    session.advance(600, None),
                     session.advance(0, "declencher_mystere"),
                     session.advance(6, None),
                     session.advance(2, None),
                     session.advance(12, None),
                     session.advance(10, None),
-                ])
+                    session.advance(10, None),
+                ]
+                journeys.append(journey)
         self.assertEqual(journeys[0], journeys[1])
         self.assertEqual([state.phase for state in journeys[0]],
-                         [Phase.POSSESSION, Phase.POSSESSION, Phase.ELF, Phase.ELF, Phase.FIN])
+                         [Phase.LABORATOIRE, Phase.POSSESSION, Phase.POSSESSION,
+                          Phase.ELF, Phase.ELF, Phase.FIN, Phase.FIN,
+                          Phase.LABORATOIRE, Phase.LABORATOIRE,
+                          Phase.POSSESSION, Phase.POSSESSION, Phase.ELF,
+                          Phase.ELF, Phase.FIN, Phase.FIN])
         self.assertEqual([state.remaining_seconds for state in journeys[0]],
-                         [30, 24, 22, 10, 0])
+                         [None, 30, 24, 22, 10, 0, 0, None, None,
+                          30, 24, 22, 10, 0, 0])
         self.assertEqual([state.events for state in journeys[0]],
-                         [(), (), (), ("avertissement",), ("alarme",)])
-        self.assertIn("ELF", " ".join(journeys[0][1].messages))
-        self.assertIn("Un défi", " ".join(journeys[0][2].messages))
+                         [(), (), (), (), ("avertissement",), ("alarme",),
+                          (), (), (), (), (), (), ("avertissement",),
+                          ("alarme",), ()])
+        self.assertIn("ELF", " ".join(journeys[0][2].messages))
+        self.assertIn("Un défi", " ".join(journeys[0][3].messages))
+        self.assertEqual(journeys[0][3].messages, journeys[0][4].messages)
+        self.assertEqual(journeys[0][7].messages, ())
+        self.assertEqual(journeys[0][9].messages, ())
+        self.assertEqual(journeys[0][11].messages, journeys[0][12].messages)
 
     def test_variant_is_explicit_and_unknown_value_is_rejected(self):
         data = {

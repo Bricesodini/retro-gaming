@@ -68,8 +68,13 @@ Garder les mêmes durées, le même volume de sortie et le même endroit d'obser
 - **Compréhension** : les participants identifient-ils la présence, l'aide d'Elf et l'annonce du défi sans explication supplémentaire ?
 - **Rythme** : les diagnostics, les anomalies et le message d'Elf laissent-ils assez de temps pour suivre la scène ?
 - **Réaction** : quels signes d'intérêt, d'inconfort ou de distraction sont observés pendant le grondement et l'apparition de la silhouette ?
+- **Intensité perçue** : chaque personne distingue-t-elle les deux versions, et laquelle juge-t-elle adaptée au groupe dans la salle et avec le volume prévus ?
 
 Consigner les observations dans les conditions de la salle, avec les personnes réellement présentes. Ce POC ne fixe pas d'intensité adaptée à un âge précis.
+
+### Reprendre les vérifications sur la borne Omarchy
+
+Sur la borne Linux x86-64, reprendre les commandes d'installation et de lancement ci-dessus dans une session graphique avec sortie audio. Configurer d'abord une combinaison de déclenchement adaptée au clavier et à Omarchy ; vérifier qu'elle arrive réellement dans la fenêtre Pygame et qu'elle n'est pas capturée par le système. Vérifier séparément le retour à l'accueil par le raccourci de remise à zéro. Faire le parcours complet dans chaque variante, puis déclencher une deuxième session, en observant la lisibilité, les effets et les sons sur l'écran et les haut-parleurs de la borne. Noter les raccourcis effectivement essayés et tout conflit. Ni la touche Super ni la combinaison Mac ne sont présumées compatibles avec Omarchy.
 
 ### Essai matériel du 19 octobre 2026
 
@@ -85,3 +90,9 @@ Le mélangeur audio pygame-ce a été ouvert sur la machine disponible et les so
 Le premier essai sonore a été jugé trop discret dans la comparaison. Le candidat actuel renforce Tension : présence abstraite plus grande et plus contrastée, parasites plus denses sans clignotement, et grondement enrichi à 120, 180 et 240 Hz pour rester audible sur des haut-parleurs ordinaires. Mystère reste la base légère. Sur le Mac Apple Silicon disponible, deux images pygame-ce ont été rendues au même instant (8 secondes sur 12), et deux extraits WAV mono de quatre secondes ont été créés pour une nouvelle comparaison. Les fichiers locaux de cette inspection sont `/tmp/retro-gaming-ticket-5-round-2/mystere-8s.png`, `tension-8s.png`, `mystere-4s.wav` et `tension-4s.wav` dans ce même dossier. Le mélangeur audio s'est ouvert à 44,1 kHz ; les niveaux mesurés des grondements du nouveau candidat sont RMS 1 782 pour Mystère et 3 146 pour Tension, sans saturation numérique. Cette mesure ne prouve pas l'intensité ressentie : les nouveaux extraits restent à écouter et comparer par l'animateur. La capture de fenêtre du lancement interactif n'a renvoyé aucune fenêtre Pygame dans la session distante. Le rendu en fenêtre, le raccourci et l'intensité sonore perçue restent donc à vérifier sur la machine, puis sur Omarchy.
 
 Les API de clavier, événement, affichage et son suivent la [documentation officielle pygame-ce](https://pyga.me/docs/).
+
+### Vérification intégrée du 19 octobre 2026 — ticket #6
+
+Sur le Mac Apple Silicon disponible, un environnement virtuel isolé a été créé avec CPython 3.11.11 et `pygame-ce==2.5.8` installé depuis `requirements.txt`. Le parcours Pygame a été exécuté avec une sortie vidéo et audio SDL simulée : **Mystère et Tension**, chacune pendant deux sessions complètes séparées par une remise à zéro. Pour chaque session, les images Pygame et les sorties du contrôleur ont confirmé accueil sans temps actif, déclenchement, possession, contact d'Elf, annonce persistante, avertissement unique, expiration avec alarme unique et accueil rétabli avant la session suivante. Le mélangeur SDL était actif pendant le parcours. Les images produites ont été inspectées pour l'accueil, la possession des deux variantes, le texte d'Elf et l'accueil après remise à zéro. Un défaut de relancement dans le même processus (polices en cache invalidées après fermeture de Pygame) a été corrigé puis le parcours a été rejoué avec succès.
+
+Cette exécution simulée ne valide pas une pression physique sur le clavier, la fenêtre Cocoa visible, la qualité sonore perçue ou l'intensité adaptée à des enfants. L'essai antérieur indiqué dans le tableau ci-dessus confirme uniquement la réception du raccourci Mac envoyé par System Events dans une fenêtre Cocoa. La borne Omarchy x86-64 n'était pas accessible pour ce ticket : installation, écran, audio, raccourcis et éventuels conflits système y restent à contrôler selon le protocole de reprise ci-dessus.
