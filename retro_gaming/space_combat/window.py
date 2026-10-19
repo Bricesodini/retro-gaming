@@ -2,7 +2,9 @@
 
 import pygame
 
-from retro_gaming.space_combat.game import Game, GameState, PlayerInput, Result
+from retro_gaming.space_combat.game import (
+    ENEMY_HALF_HEIGHT, ENEMY_HALF_WIDTH, Game, GameState, PlayerInput, Result,
+)
 
 
 BACKGROUND = (5, 13, 24)
@@ -31,10 +33,12 @@ def _draw_ship(surface: pygame.Surface, x: float, y: float) -> None:
 
 def _draw_enemy(surface: pygame.Surface, x: float, y: float) -> None:
     x, y = round(x), round(y)
-    pygame.draw.polygon(surface, RED, [(x - 21, y - 7), (x - 10, y - 13),
-                                       (x + 10, y - 13), (x + 21, y - 7),
+    pygame.draw.polygon(surface, RED, [(x - ENEMY_HALF_WIDTH, y - 7),
+                                       (x - 10, y - ENEMY_HALF_HEIGHT),
+                                       (x + 10, y - ENEMY_HALF_HEIGHT),
+                                       (x + ENEMY_HALF_WIDTH, y - 7),
                                        (x + 16, y + 10), (x + 8, y + 6),
-                                       (x, y + 13), (x - 8, y + 6),
+                                       (x, y + ENEMY_HALF_HEIGHT), (x - 8, y + 6),
                                        (x - 16, y + 10)])
     pygame.draw.line(surface, BACKGROUND, (x - 8, y - 3), (x + 8, y - 3), 3)
 

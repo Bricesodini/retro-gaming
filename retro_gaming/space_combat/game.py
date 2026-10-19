@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+ENEMY_HALF_WIDTH = 22
+ENEMY_HALF_HEIGHT = 13
+
+
 class Result(Enum):
     PLAYING = "playing"
     VICTORY = "victory"
@@ -92,8 +96,8 @@ class Game:
         enemies = list(state.enemies)
         if enemies:
             delta_x = self._enemy_direction * 80 * seconds
-            left = min(enemy.x for enemy in enemies) + delta_x - 22
-            right = max(enemy.x for enemy in enemies) + delta_x + 22
+            left = min(enemy.x for enemy in enemies) + delta_x - ENEMY_HALF_WIDTH
+            right = max(enemy.x for enemy in enemies) + delta_x + ENEMY_HALF_WIDTH
             if left < 20 or right > state.width - 20:
                 self._enemy_direction *= -1
                 # Reflect the overshoot so movement is independent of frame count.
@@ -109,8 +113,9 @@ class Game:
         for shot in shots:
             next_y = shot.y - 760 * seconds
             hit = next((index for index, enemy in enumerate(enemies)
-                        if abs(shot.x - enemy.x) <= 22
-                        and next_y <= enemy.y + 13 and shot.y >= enemy.y - 13), None)
+                        if abs(shot.x - enemy.x) <= ENEMY_HALF_WIDTH
+                        and next_y <= enemy.y + ENEMY_HALF_HEIGHT
+                        and shot.y >= enemy.y - ENEMY_HALF_HEIGHT), None)
             if hit is not None:
                 enemies.pop(hit)
             elif next_y >= 0:
@@ -119,7 +124,7 @@ class Game:
         result = Result.PLAYING
         if not enemies:
             result = Result.VICTORY
-        elif any(enemy.y + 13 >= state.height for enemy in enemies):
+        elif any(enemy.y + ENEMY_HALF_HEIGHT >= state.height for enemy in enemies):
             result = Result.DEFEAT
         self.state = GameState(state.width, state.height, player_x, state.player_y,
                                state.player_half_width, tuple(enemies),
