@@ -117,7 +117,7 @@ def _draw_welcome(surface: pygame.Surface, elapsed: float, active: bool = False)
 
     _label(surface, _font(42, bold=True), "LABORATOIRE", (41, 91), WHITE)
     _label(surface, _font(42, bold=True), "1986", (41, 139), GREEN)
-    _label(surface, _font(16), "TERMINAL DE SURVEILLANCE  /  ETAT DES SYSTEMES", (367, 159), GREEN_DIM)
+    _label(surface, _font(14), "TERMINAL DE SURVEILLANCE  /  ETAT DES SYSTEMES", (367, 159), GREEN_DIM)
     pygame.draw.rect(surface, GREEN, pygame.Rect(41, 215, 1119, 2))
 
     _draw_diagnostics(surface, elapsed)
