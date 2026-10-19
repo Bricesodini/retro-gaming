@@ -1,0 +1,8 @@
+{
+  "session_seconds": 300,
+  "possession_seconds": 12,
+  "trigger": {
+    "key": "space",
+    "modifiers": ["ctrl", "alt", "meta"]
+  }
+}

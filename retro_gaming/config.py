@@ -1,0 +1,54 @@
+"""External calibration for the laboratory demonstration."""
+
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+import pygame
+
+
+MODIFIERS = {
+    "ctrl": pygame.KMOD_CTRL,
+    "alt": pygame.KMOD_ALT,
+    "meta": pygame.KMOD_GUI,
+    "shift": pygame.KMOD_SHIFT,
+}
+
+
+@dataclass(frozen=True)
+class Config:
+    session_seconds: float
+    possession_seconds: float
+    trigger_key: int
+    trigger_modifiers: tuple[str, ...]
+
+    def matches(self, event: pygame.event.Event) -> bool:
+        return (
+            event.type == pygame.KEYDOWN
+            and event.key == self.trigger_key
+            and all(event.mod & MODIFIERS[name] for name in self.trigger_modifiers)
+            and not any(
+                event.mod & flag
+                for name, flag in MODIFIERS.items()
+                if name not in self.trigger_modifiers
+            )
+        )
+
+
+def load_config(path: Path) -> Config:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        session_seconds = float(data["session_seconds"])
+        possession_seconds = float(data["possession_seconds"])
+        trigger = data["trigger"]
+        key = pygame.key.key_code(trigger["key"])
+        modifiers = tuple(trigger["modifiers"])
+        if not modifiers or len(set(modifiers)) != len(modifiers):
+            raise ValueError("la liste des modificateurs doit être unique et non vide")
+        if any(name not in MODIFIERS for name in modifiers):
+            raise ValueError("modificateur inconnu (ctrl, alt, meta, shift)")
+        if session_seconds <= 0 or possession_seconds <= 0 or possession_seconds >= session_seconds:
+            raise ValueError("la possession doit être positive et plus courte que la session")
+        return Config(session_seconds, possession_seconds, key, modifiers)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+        raise ValueError(f"Configuration invalide dans {path} : {error}") from error

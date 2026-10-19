@@ -1,10 +1,14 @@
-"""Original, procedurally drawn welcome screen for the 1986 laboratory."""
+"""Procedurally drawn laboratory, gradual possession and Elf contact."""
 
+import argparse
 import math
+from array import array
 from functools import lru_cache
+from pathlib import Path
 
 import pygame
 
+from retro_gaming.config import load_config
 from retro_gaming.session import Session
 
 
@@ -20,6 +24,8 @@ GREEN = (127, 226, 166)
 GREEN_DIM = (73, 148, 109)
 WHITE = (209, 237, 211)
 AMBER = (231, 183, 93)
+RED = (169, 79, 73)
+RED_DIM = (92, 49, 48)
 
 DIAGNOSTICS = (
     "MEMOIRE CENTRALE .............. STABLE",
@@ -100,7 +106,7 @@ def _draw_diagnostics(surface: pygame.Surface, elapsed: float) -> None:
         _label(surface, _font(17), "_", (65, 598), GREEN)
 
 
-def _draw_welcome(surface: pygame.Surface, elapsed: float, phase: str) -> None:
+def _draw_welcome(surface: pygame.Surface, elapsed: float, active: bool = False) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
     pygame.draw.rect(surface, GREEN_DIM, pygame.Rect(0, 0, WIDTH, 6))
@@ -125,33 +131,136 @@ def _draw_welcome(surface: pygame.Surface, elapsed: float, phase: str) -> None:
 
     pygame.draw.line(surface, LINE, (40, 659), (1160, 659))
     _label(surface, _font(14), "SIMULATION  /  DONNEES FICTIVES", (40, 684), AMBER)
-    _label(surface, _font(14), "SESSION EN ATTENTE", (862, 684), GREEN)
+    _label(surface, _font(14), "SESSION EN COURS" if active else "SESSION EN ATTENTE", (862, 684), GREEN)
     _label(surface, _font(13), "FERMER : ECHAP OU BOUTON DE LA FENETRE", (40, 721), GREEN_DIM)
 
-    # Kept explicit: the display observes the session without starting it.
-    assert phase == "laboratoire"
+
+def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float, messages: tuple[str, ...]) -> None:
+    # The original terminal remains visible beneath a slowly growing disturbance.
+    progress = min(1, elapsed / duration)
+    _draw_welcome(surface, elapsed, active=True)
+    veil = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    veil.fill((76, 12, 22, int(42 * progress)))
+    surface.blit(veil, (0, 0))
+
+    diagnostics = pygame.Rect(40, 244, 738, 386)
+    _panel(surface, diagnostics)
+    _label(surface, _font(16, bold=True), "JOURNAL DES ANOMALIES", (63, 264), RED)
+    pygame.draw.line(surface, RED_DIM, (62, 301), (756, 301))
+    anomalies = (
+        "CAPTEURS .......... SIGNAL INCONNU",
+        "ARCHIVE ........... REPONSE IMPOSSIBLE",
+        "CHAMBRE 04 ........ PRESENCE DETECTEE",
+    )
+    for index, line in enumerate(anomalies[: max(1, int(progress * 3) + 1)]):
+        _label(surface, _font(17), line, (64, 330 + index * 49), RED)
+
+    # Sparse interference: no full-screen flashes and no random frame-to-frame jumps.
+    for index in range(int(progress * 9)):
+        y = 318 + index * 39 + int(3 * math.sin(elapsed * 0.8 + index))
+        pygame.draw.line(surface, RED_DIM, (795, y), (1146, y), 1)
+
+    # Each branch grows with the phase and bends smoothly, like roots along the bezel.
+    for branch in range(7):
+        end = int(4 + progress * 14)
+        base_y = 200 + branch * 85
+        points = []
+        for step in range(end):
+            x = int(1199 - step * (9 + branch % 3))
+            y = int(base_y + step * (3 if branch % 2 else -3) + 9 * math.sin(step * 0.6 + branch))
+            points.append((x, y))
+        if len(points) > 1:
+            pygame.draw.lines(surface, RED_DIM, False, points, 2)
+
+    status = pygame.Rect(798, 508, 362, 122)
+    _panel(surface, status)
+    _label(surface, _font(14), "ETAT DU TERMINAL", (819, 528), RED)
+    pygame.draw.circle(surface, RED, (828, 584), 5)
+    _label(surface, _font(21, bold=True), "LIAISON PERTURBEE", (845, 570), WHITE)
+
+    if messages:
+        box = pygame.Rect(40, 533, 738, 97)
+        pygame.draw.rect(surface, PANEL, box, border_radius=7)
+        pygame.draw.rect(surface, GREEN, box, 1, border_radius=7)
+        _label(surface, _font(24, bold=True), messages[0], (62, 565), WHITE)
+
+
+def _draw_elf(surface: pygame.Surface, elapsed: float, messages: tuple[str, ...]) -> None:
+    _draw_welcome(surface, elapsed, active=True)
+    for branch in range(5):
+        points = [(1198 - i * 13, 225 + branch * 83 + int(7 * math.sin(i * 0.5 + branch))) for i in range(10)]
+        pygame.draw.lines(surface, RED_DIM, False, points, 2)
+    panel = pygame.Rect(40, 244, 1120, 386)
+    pygame.draw.rect(surface, PANEL, panel, border_radius=7)
+    pygame.draw.rect(surface, GREEN_DIM, panel, 1, border_radius=7)
+    _label(surface, _font(18), "TRANSMISSION RETABLIE  /  ELF", (68, 272), GREEN)
+    pygame.draw.line(surface, LINE, (68, 314), (1132, 314))
+    for index, line in enumerate(messages):
+        _label(surface, _font(25 if index == 0 else 22, bold=index == 0), line, (69, 348 + index * 68), WHITE)
+    _label(surface, _font(15), "ANNONCE DU DEFI  /  EN ATTENTE DE LA SUITE", (69, 573), AMBER)
+
+
+def _tone(frequency: float, seconds: float, volume: float = 0.13) -> pygame.mixer.Sound:
+    sample_rate = 44100
+    samples = array("h")
+    for i in range(int(sample_rate * seconds)):
+        t = i / sample_rate
+        envelope = min(1, t / 0.08) * min(1, (seconds - t) / 0.18)
+        wobble = 1 + 0.015 * math.sin(t * 9)
+        value = math.sin(2 * math.pi * frequency * wobble * t)
+        samples.append(int(32767 * volume * envelope * value))
+    return pygame.mixer.Sound(buffer=samples.tobytes())
 
 
 def run() -> None:
+    parser = argparse.ArgumentParser(description="Laboratoire 1986")
+    parser.add_argument("--config", type=Path, default=Path(__file__).resolve().parents[1] / "config.json")
+    args = parser.parse_args()
+    pygame.mixer.pre_init(frequency=44100, size=-16, channels=1)
     pygame.init()
     try:
+        config = load_config(args.config)
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Laboratoire 1986 | Terminal de surveillance")
         clock = pygame.time.Clock()
-        session = Session()
+        session = Session(config.session_seconds, config.possession_seconds)
         started_at = pygame.time.get_ticks()
+        previous_tick = started_at
+        previous_phase = "laboratoire"
+        had_contact = False
+        sounds = None
+        if pygame.mixer.get_init():
+            sounds = {"possession": _tone(83, 1.1), "contact": _tone(493, 0.45), "elf": _tone(659, 0.7)}
         running = True
         while running:
+            action = None
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (
                     event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
                 ):
                     running = False
+                elif config.matches(event):
+                    action = "declencher_mystere"
             if not running:
                 break
-            elapsed = (pygame.time.get_ticks() - started_at) / 1000
-            state = session.advance(elapsed, animator_action=None)
-            _draw_welcome(screen, elapsed, state.phase)
+            now = pygame.time.get_ticks()
+            elapsed = (now - started_at) / 1000
+            delta = (now - previous_tick) / 1000
+            previous_tick = now
+            state = session.advance(delta, action)
+            if state.phase != previous_phase and sounds:
+                sounds[state.phase].play()
+            if state.phase == "possession" and state.messages and not had_contact:
+                had_contact = True
+                if sounds:
+                    sounds["contact"].play()
+            previous_phase = state.phase
+            if state.phase == "laboratoire":
+                _draw_welcome(screen, elapsed)
+            elif state.phase == "possession":
+                _draw_possession(screen, config.session_seconds - state.remaining_seconds, config.possession_seconds, state.messages)
+            else:
+                _draw_elf(screen, elapsed, state.messages)
             pygame.display.flip()
             clock.tick(FPS)
     finally:
