@@ -212,6 +212,10 @@ def _tone(frequency: float, seconds: float, volume: float = 0.13) -> pygame.mixe
     return pygame.mixer.Sound(buffer=samples.tobytes())
 
 
+def _draw_test_mode_badge(surface: pygame.Surface) -> None:
+    _label(surface, _font(15, bold=True), "MODE TEST", (1045, 721), AMBER)
+
+
 def _draw_session_status(surface: pygame.Surface, remaining: float, warning: bool, test_mode: bool) -> None:
     color = AMBER if warning else GREEN
     pygame.draw.rect(surface, PANEL, pygame.Rect(792, 74, 367, 120), border_radius=7)
@@ -222,7 +226,7 @@ def _draw_session_status(surface: pygame.Surface, remaining: float, warning: boo
     if warning:
         _label(surface, _font(14, bold=True), "FIN DE SESSION PROCHE", (811, 159), AMBER)
     if test_mode:
-        _label(surface, _font(15, bold=True), "MODE TEST", (1045, 35), AMBER)
+        _draw_test_mode_badge(surface)
 
 
 def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -> None:
@@ -235,7 +239,7 @@ def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -
     if combined_alerts:
         _label(surface, _font(17, bold=True), "AVERTISSEMENT DE FIN EMIS", (445, 550), AMBER)
     if test_mode:
-        _label(surface, _font(15, bold=True), "MODE TEST", (1045, 35), AMBER)
+        _draw_test_mode_badge(surface)
 
 
 def _reset_matches(event: pygame.event.Event) -> bool:
@@ -328,7 +332,7 @@ def run() -> None:
             if state.phase in (Phase.POSSESSION, Phase.ELF):
                 _draw_session_status(screen, state.remaining_seconds, warning_active, args.test_mode)
             elif state.phase is Phase.LABORATOIRE and args.test_mode:
-                _label(screen, _font(15, bold=True), "MODE TEST", (1045, 35), AMBER)
+                _draw_test_mode_badge(screen)
             pygame.display.flip()
             clock.tick(FPS)
     finally:
