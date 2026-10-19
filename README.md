@@ -1,6 +1,6 @@
 # Laboratoire 1986 — POC Mystère / Tension
 
-Une fenêtre Pygame CE présente le terminal de laboratoire pendant l'introduction. L'animateur choisit Mystère ou Tension dans la configuration, puis déclenche discrètement la possession. Les diagnostics se dérèglent, des interférences et des racines apparaissent progressivement, puis Elf prend contact et annonce un défi. Tension amplifie les déformations, ajoute une silhouette abstraite dans la chambre du signal et rend le grondement plus présent. La trame et les messages sont identiques. Le parcours POC s'arrête à l'annonce ; le combat spatial et le labyrinthe se lancent séparément.
+Une fenêtre Pygame CE présente le terminal de laboratoire pendant l'introduction. L'animateur choisit Mystère ou Tension dans la configuration, puis déclenche discrètement la possession. Les diagnostics se dérèglent, des interférences et des racines apparaissent progressivement, puis Elf prend contact et annonce un défi. Tension amplifie les déformations, ajoute une silhouette abstraite dans la chambre du signal et rend le grondement plus présent. La trame et les messages sont identiques. Le parcours POC s'arrête à l'annonce ; les trois jeux se lancent séparément.
 
 ## Versions et installation
 
@@ -43,6 +43,14 @@ Déplacer le vaisseau avec les flèches gauche/droite ou **A/D**. Maintenir **Es
 
 Déplacer le personnage avec les flèches ou **WASD** pour ramasser toutes les pastilles du plateau. Les murs bloquent le passage. Un adversaire parcourt les couloirs ; son contact termine la manche à une seule vie. Vider le plateau gagne. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Le labyrinthe et le combat spatial se lancent séparément du parcours POC.
 
+## Jouer au jeu de plateformes
+
+```sh
+.venv/bin/python -m retro_gaming.platformer
+```
+
+Dans ce niveau original inspiré des arcades 2D des années 80, déplacer le personnage à gauche et à droite avec les flèches ou **A/D**. Monter et descendre les échelles avec **↑/↓** ou **W/S** ; **Espace** fait sauter. Éviter les obstacles mobiles et atteindre la sortie en haut pour gagner. Le contact avec un obstacle ou une chute hors du parcours fait perdre. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce jeu se lance indépendamment du parcours POC, du combat spatial et du labyrinthe.
+
 ## Configuration
 
 Modifier `config.json` avant le lancement, ou fournir un autre fichier :
@@ -80,6 +88,8 @@ Les tests de session contrôlent le temps sans attendre : accueil inactif, décl
 Les tests du combat spatial pilotent la vague avec du temps et des entrées fournis par le test : déplacement, tir et destruction, mouvement des ennemis, victoire et échec persistants.
 
 Les tests du labyrinthe pilotent la manche sans fenêtre avec du temps et des directions fournis par le test : déplacement, murs, collecte des pastilles, mouvement d'adversaire, victoire et échec persistants.
+
+Les tests du jeu de plateformes pilotent la manche sans fenêtre avec des directions, le saut et du temps fourni par le test : déplacement, plateformes, échelles, obstacles mobiles, victoire et échec persistants.
 
 ### Comparer les deux ambiances
 

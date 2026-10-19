@@ -28,7 +28,7 @@ Les équipes traversent plusieurs salles et y récupèrent des chiffres. Leur co
 ## Contraintes du MVP demandées
 
 - Python/Pygame, développement et déploiement sur macOS Apple Silicon. Linux et Omarchy ne sont pas des plateformes cibles.
-- Trois jeux originaux inspirés du labyrinthe à vider, du combat spatial par vagues et de l’empilement de blocs avec objectif de lignes.
+- Trois jeux originaux : un labyrinthe à vider, un combat spatial par vagues et un jeu de plateformes 2D inspiré des jeux d’arcade des années 80. Le jeu de plateformes remplace l’ancienne idée d’empilement de blocs. Il comporte un niveau fixe avec plateformes et échelles; le participant se déplace et grimpe avec les flèches ou WASD, et saute avec Espace. Atteindre la sortie en haut gagne la manche; le contact avec un obstacle mobile ou une chute la fait perdre.
 - Un joueur à la fois, trois tentatives par défaut, changement de joueur possible entre les tentatives et même jeu pendant le défi.
 - Objectifs, difficulté, nombre de tentatives, chiffre secret, durée globale et avertissement configurables extérieurement.
 - Révélation du chiffre à la réussite, puis accès libre aux trois jeux jusqu’à expiration du temps global.
