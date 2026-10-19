@@ -225,13 +225,15 @@ def _draw_session_status(surface: pygame.Surface, remaining: float, warning: boo
         _label(surface, _font(15, bold=True), "MODE TEST", (1045, 35), AMBER)
 
 
-def _draw_end(surface: pygame.Surface, test_mode: bool) -> None:
+def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
     _label(surface, _font(44, bold=True), "SESSION TERMINEE", (350, 223), AMBER)
     _label(surface, _font(24), "Le temps est ecoule. Merci a cette equipe.", (326, 310), WHITE)
     _label(surface, _font(21), "Animateur : remettre le laboratoire a zero pour l'equipe suivante.", (171, 391), GREEN)
     _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + R", (419, 474), GREEN_DIM)
+    if combined_alerts:
+        _label(surface, _font(17, bold=True), "AVERTISSEMENT DE FIN EMIS", (445, 550), AMBER)
     if test_mode:
         _label(surface, _font(15, bold=True), "MODE TEST", (1045, 35), AMBER)
 
@@ -262,6 +264,7 @@ def run() -> None:
         previous_phase = Phase.LABORATOIRE
         had_contact = False
         warning_active = False
+        combined_alerts = False
         sounds = None
         contact_sound = None
         if pygame.mixer.get_init():
@@ -293,14 +296,18 @@ def run() -> None:
                     pygame.mixer.stop()
                 had_contact = False
                 warning_active = False
+                combined_alerts = False
                 started_at = now
             if "avertissement" in state.events:
                 warning_active = True
                 if pygame.mixer.get_init():
                     warning_sound.play()
-            if "alarme" in state.events and pygame.mixer.get_init():
-                pygame.mixer.stop()
-                alarm_sound.play()
+            if "alarme" in state.events:
+                combined_alerts = "avertissement" in state.events
+                if pygame.mixer.get_init():
+                    if not combined_alerts:
+                        pygame.mixer.stop()
+                    alarm_sound.play()
             if state.phase != previous_phase and sounds and state.phase in sounds:
                 sounds[state.phase].play()
             if state.phase is Phase.POSSESSION and state.messages and not had_contact:
@@ -315,7 +322,7 @@ def run() -> None:
             elif state.phase is Phase.ELF:
                 _draw_elf(screen, elapsed, state.messages)
             elif state.phase is Phase.FIN:
-                _draw_end(screen, args.test_mode)
+                _draw_end(screen, args.test_mode, combined_alerts)
             else:
                 raise AssertionError(f"Phase sans écran : {state.phase}")
             if state.phase in (Phase.POSSESSION, Phase.ELF):

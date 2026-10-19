@@ -43,6 +43,16 @@ Le fichier contient `session_seconds` (300 par défaut), `possession_seconds` (1
 
 Cette alternative est configurable mais n'a pas été essayée sur Omarchy. Une configuration invalide affiche une erreur avant d'ouvrir la fenêtre.
 
+## Mode test
+
+Pour parcourir la session plus vite, lancer :
+
+```sh
+.venv/bin/python -m retro_gaming --test-mode
+```
+
+`--test-mode` ramène en mémoire les trois durées à **10 %** de leur valeur configurée : avec `config.json` fourni, la session dure 30 secondes, la possession 1,2 seconde et l’avertissement survient 6 secondes avant la fin. Un badge **MODE TEST** reste visible à l’écran. Le fichier de configuration normale n’est pas modifié.
+
 ## Vérification
 
 ```sh
