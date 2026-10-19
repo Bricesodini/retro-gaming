@@ -303,7 +303,7 @@ def run() -> None:
         clock = pygame.time.Clock()
         scale = 0.1 if args.test_mode else 1.0
         session = Session(config.session_seconds * scale, config.possession_seconds * scale,
-                          config.warning_seconds * scale, variant=config.variant)
+                          config.warning_seconds * scale)
         started_at = pygame.time.get_ticks()
         previous_tick = started_at
         previous_phase = Phase.LABORATOIRE
