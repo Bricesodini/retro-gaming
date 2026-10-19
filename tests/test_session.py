@@ -1,6 +1,6 @@
 import unittest
 
-from retro_gaming.session import Session
+from retro_gaming.session import Phase, Session
 
 
 class WelcomeJourneyTest(unittest.TestCase):
@@ -10,7 +10,7 @@ class WelcomeJourneyTest(unittest.TestCase):
         first = session.advance(0, animator_action=None)
         after_introduction = session.advance(3600, animator_action=None)
 
-        self.assertEqual(first.phase, "laboratoire")
+        self.assertEqual(first.phase, Phase.LABORATOIRE)
         self.assertIsNone(first.remaining_seconds)
         self.assertEqual(first.events, ())
         self.assertEqual(after_introduction, first)
@@ -20,7 +20,7 @@ class WelcomeJourneyTest(unittest.TestCase):
 
         state = session.advance(5, animator_action="unassigned_key")
 
-        self.assertEqual(state.phase, "laboratoire")
+        self.assertEqual(state.phase, Phase.LABORATOIRE)
         self.assertIsNone(state.remaining_seconds)
         self.assertEqual(state.events, ())
 
@@ -35,14 +35,14 @@ class MysteryJourneyTest(unittest.TestCase):
         intervention = session.advance(3, animator_action=None)
         long_after = session.advance(20, animator_action="declencher_mystere")
 
-        self.assertEqual(started.phase, "possession")
+        self.assertEqual(started.phase, Phase.POSSESSION)
         self.assertEqual(started.remaining_seconds, 180)
         self.assertEqual(repeated.remaining_seconds, 176)
-        self.assertEqual(contact.phase, "possession")
+        self.assertEqual(contact.phase, Phase.POSSESSION)
         self.assertIn("ELF", " ".join(contact.messages))
-        self.assertEqual(intervention.phase, "elf")
+        self.assertEqual(intervention.phase, Phase.ELF)
         self.assertEqual(intervention.remaining_seconds, 168)
-        self.assertEqual(long_after.phase, "elf")
+        self.assertEqual(long_after.phase, Phase.ELF)
         self.assertEqual(long_after.remaining_seconds, 148)
         self.assertEqual(long_after.messages, intervention.messages)
         self.assertEqual(long_after.events, ())

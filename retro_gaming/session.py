@@ -1,11 +1,18 @@
 """Parcours observable de la session d'animation."""
 
 from dataclasses import dataclass
+from enum import Enum
+
+
+class Phase(Enum):
+    LABORATOIRE = "laboratoire"
+    POSSESSION = "possession"
+    ELF = "elf"
 
 
 @dataclass(frozen=True)
 class SessionState:
-    phase: str
+    phase: Phase
     remaining_seconds: float | None
     events: tuple[str, ...]
     messages: tuple[str, ...] = ()
@@ -29,7 +36,7 @@ class Session:
             raise ValueError("Le temps écoulé ne peut pas être négatif.")
         if self._active_seconds is None:
             if animator_action != "declencher_mystere":
-                return SessionState("laboratoire", None, ())
+                return SessionState(Phase.LABORATOIRE, None, ())
             self._active_seconds = 0
         else:
             self._active_seconds += elapsed_seconds
@@ -42,9 +49,9 @@ class Session:
                 if elapsed >= self.possession_seconds * 0.65
                 else ()
             )
-            return SessionState("possession", remaining, (), messages)
+            return SessionState(Phase.POSSESSION, remaining, (), messages)
         return SessionState(
-            "elf",
+            Phase.ELF,
             remaining,
             (),
             (

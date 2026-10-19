@@ -9,7 +9,7 @@ from pathlib import Path
 import pygame
 
 from retro_gaming.config import load_config
-from retro_gaming.session import Session
+from retro_gaming.session import Phase, Session
 
 
 WIDTH = 1200
@@ -226,11 +226,13 @@ def run() -> None:
         session = Session(config.session_seconds, config.possession_seconds)
         started_at = pygame.time.get_ticks()
         previous_tick = started_at
-        previous_phase = "laboratoire"
+        previous_phase = Phase.LABORATOIRE
         had_contact = False
         sounds = None
+        contact_sound = None
         if pygame.mixer.get_init():
-            sounds = {"possession": _tone(83, 1.1), "contact": _tone(493, 0.45), "elf": _tone(659, 0.7)}
+            sounds = {Phase.POSSESSION: _tone(83, 1.1), Phase.ELF: _tone(659, 0.7)}
+            contact_sound = _tone(493, 0.45)
         running = True
         while running:
             action = None
@@ -248,19 +250,21 @@ def run() -> None:
             delta = (now - previous_tick) / 1000
             previous_tick = now
             state = session.advance(delta, action)
-            if state.phase != previous_phase and sounds:
+            if state.phase != previous_phase and sounds and state.phase in sounds:
                 sounds[state.phase].play()
-            if state.phase == "possession" and state.messages and not had_contact:
+            if state.phase is Phase.POSSESSION and state.messages and not had_contact:
                 had_contact = True
-                if sounds:
-                    sounds["contact"].play()
+                if contact_sound:
+                    contact_sound.play()
             previous_phase = state.phase
-            if state.phase == "laboratoire":
+            if state.phase is Phase.LABORATOIRE:
                 _draw_welcome(screen, elapsed)
-            elif state.phase == "possession":
+            elif state.phase is Phase.POSSESSION:
                 _draw_possession(screen, config.session_seconds - state.remaining_seconds, config.possession_seconds, state.messages)
-            else:
+            elif state.phase is Phase.ELF:
                 _draw_elf(screen, elapsed, state.messages)
+            else:
+                raise AssertionError(f"Phase sans écran : {state.phase}")
             pygame.display.flip()
             clock.tick(FPS)
     finally:
