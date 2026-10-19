@@ -27,6 +27,13 @@ class PlatformerTests(unittest.TestCase):
         self.assertAlmostEqual(landed.player_y, 280, delta=1)
         self.assertEqual(landed.result, Result.PLAYING)
 
+    def test_zero_elapsed_time_does_not_consume_jump_press(self):
+        game = Game(small_level())
+        still = game.advance(0, PlayerInput(jump=True))
+        self.assertEqual(still.player_y, 280)
+        airborne = game.advance(0.1, PlayerInput(jump=True))
+        self.assertLess(airborne.player_y, 280)
+
     def test_ladder_reaches_upper_platform_then_exit_wins_and_freezes(self):
         game = Game(small_level())
         game.advance(1.3, PlayerInput(right=True))

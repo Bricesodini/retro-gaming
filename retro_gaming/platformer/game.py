@@ -111,6 +111,8 @@ class Game:
             raise ValueError("Elapsed time must be finite and nonnegative.")
         if self.state.result is not Result.PLAYING:
             return self.state
+        if elapsed_seconds == 0:
+            return self.state
         jump_pressed = player_input.jump and not self._jump_held
         self._jump_held = player_input.jump
         remaining = elapsed_seconds
