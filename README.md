@@ -1,6 +1,6 @@
 # Laboratoire 1986 — POC Mystère / Tension
 
-Une fenêtre Pygame CE présente le terminal de laboratoire pendant l'introduction. L'animateur choisit Mystère ou Tension dans la configuration, puis déclenche discrètement la possession. Les diagnostics se dérèglent, des interférences et des racines apparaissent progressivement, puis Elf prend contact et annonce un défi. Tension amplifie les déformations, ajoute une silhouette abstraite dans la chambre du signal et rend le grondement plus présent. La trame et les messages sont identiques. Le parcours POC s'arrête à l'annonce ; le combat spatial se lance séparément.
+Une fenêtre Pygame CE présente le terminal de laboratoire pendant l'introduction. L'animateur choisit Mystère ou Tension dans la configuration, puis déclenche discrètement la possession. Les diagnostics se dérèglent, des interférences et des racines apparaissent progressivement, puis Elf prend contact et annonce un défi. Tension amplifie les déformations, ajoute une silhouette abstraite dans la chambre du signal et rend le grondement plus présent. La trame et les messages sont identiques. Le parcours POC s'arrête à l'annonce ; le combat spatial et le labyrinthe se lancent séparément.
 
 ## Versions et installation
 
@@ -33,7 +33,15 @@ Les effets visuels, le grondement et les sons brefs, dont l’avertissement et l
 .venv/bin/python -m retro_gaming.space_combat
 ```
 
-Déplacer le vaisseau avec les flèches gauche/droite ou **A/D**. Maintenir **Espace** pour tirer. Détruire toute la vague gagne ; un ennemi qui atteint le bas fait perdre. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce premier jeu est indépendant du parcours POC ; les deux autres jeux ne sont pas encore disponibles.
+Déplacer le vaisseau avec les flèches gauche/droite ou **A/D**. Maintenir **Espace** pour tirer. Détruire toute la vague gagne ; un ennemi qui atteint le bas fait perdre. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce jeu est indépendant du parcours POC.
+
+## Jouer au labyrinthe
+
+```sh
+.venv/bin/python -m retro_gaming.maze
+```
+
+Déplacer le personnage avec les flèches ou **WASD** pour ramasser toutes les pastilles du plateau. Les murs bloquent le passage. Un adversaire parcourt les couloirs ; son contact termine la manche à une seule vie. Vider le plateau gagne. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Le labyrinthe et le combat spatial se lancent séparément du parcours POC.
 
 ## Configuration
 
@@ -70,6 +78,8 @@ Pour parcourir la session plus vite, lancer :
 Les tests de session contrôlent le temps sans attendre : accueil inactif, déclenchement unique, ordre possession puis Elf, temps consommé pendant la possession et messages persistants, seuils d’avertissement et d’alarme, traversée des deux seuils en une avancée, expiration dans les deux phases, remise à zéro et second cycle.
 
 Les tests du combat spatial pilotent la vague avec du temps et des entrées fournis par le test : déplacement, tir et destruction, mouvement des ennemis, victoire et échec persistants.
+
+Les tests du labyrinthe pilotent la manche sans fenêtre avec du temps et des directions fournis par le test : déplacement, murs, collecte des pastilles, mouvement d'adversaire, victoire et échec persistants.
 
 ### Comparer les deux ambiances
 

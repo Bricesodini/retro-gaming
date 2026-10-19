@@ -1,0 +1,1 @@
+"""Standalone original maze game."""
