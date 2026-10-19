@@ -23,9 +23,9 @@ Ces versions ont été installées et essayées sur macOS Apple Silicon. Sur Lin
 .venv/bin/python -m retro_gaming
 ```
 
-L'accueil affiche des diagnostics autonomes, sans temps actif. Avec la fenêtre au premier plan, appuyer sur **Contrôle + Option + Commande + Espace** sur Mac pour commencer. Le chronomètre de session démarre alors, y compris pendant les douze secondes initiales de possession. Un appui prolongé ou répété ne relance rien. Elf apparaît ensuite avec un texte qui reste affiché. Fermer avec **Échap** ou le bouton de la fenêtre.
+L'accueil affiche des diagnostics autonomes, sans temps actif. Avec la fenêtre au premier plan, appuyer sur **Contrôle + Option + Commande + Espace** sur Mac pour commencer. Le chronomètre de session démarre alors, y compris pendant les douze secondes initiales de possession. Un appui prolongé ou répété ne relance rien. Elf apparaît ensuite avec un texte qui reste affiché. Le temps restant est affiché pendant la session. À 60 secondes de la fin par défaut, un avertissement visuel et sonore apparaît une seule fois. À expiration, une alarme retentit une seule fois et un écran de fin attend l’animateur. **Contrôle + Option + Commande + R** réinitialise depuis toute phase : le laboratoire revient avec un chronomètre neuf et les sons précédents sont arrêtés. Ce geste est distinct du déclenchement. Fermer avec **Échap** ou le bouton de la fenêtre.
 
-Les effets visuels et les trois sons brefs sont produits par le code. Il n'y a ni voix, ni ROM, ni média extrait de la série. La suite du POC (expiration, alarme, remise à zéro, variante Tension) sera traitée dans les tickets suivants.
+Les effets visuels et les sons brefs, dont l’avertissement et l’alarme, sont produits par le code. Il n'y a ni voix, ni ROM, ni média extrait de la série. La variante Tension sera traitée dans un ticket suivant.
 
 ## Configuration
 
@@ -35,10 +35,10 @@ Modifier `config.json` avant le lancement, ou fournir un autre fichier :
 .venv/bin/python -m retro_gaming --config /chemin/vers/ma-configuration.json
 ```
 
-Le fichier contient `session_seconds` (300 par défaut), `possession_seconds` (12), et `trigger`. Le temps de possession doit être positif et inférieur au temps de session. `trigger.key` est un nom de touche pygame-ce comme `space` ; `trigger.modifiers` accepte `ctrl`, `alt`, `meta` (Commande sur Mac) et `shift`. Exemple de combinaison alternative si le système intercepte le raccourci initial :
+Le fichier contient `session_seconds` (300 par défaut), `possession_seconds` (12), `warning_seconds` (60, le nombre de secondes avant expiration), et `trigger`. Les trois durées doivent être positives et finies ; la possession et l’avertissement doivent chacun tenir à l’intérieur de la session. `trigger.key` est un nom de touche pygame-ce comme `space` ; `trigger.modifiers` accepte `ctrl`, `alt`, `meta` (Commande sur Mac) et `shift`. Exemple de combinaison alternative si le système intercepte le raccourci initial :
 
 ```json
-{"session_seconds": 300, "possession_seconds": 12, "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "shift"]}}
+{"session_seconds": 300, "possession_seconds": 12, "warning_seconds": 60, "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "shift"]}}
 ```
 
 Cette alternative est configurable mais n'a pas été essayée sur Omarchy. Une configuration invalide affiche une erreur avant d'ouvrir la fenêtre.
@@ -49,7 +49,7 @@ Cette alternative est configurable mais n'a pas été essayée sur Omarchy. Une 
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-Les tests de session contrôlent le temps sans attendre : accueil inactif, déclenchement unique, ordre possession puis Elf, temps consommé pendant la possession et messages persistants.
+Les tests de session contrôlent le temps sans attendre : accueil inactif, déclenchement unique, ordre possession puis Elf, temps consommé pendant la possession et messages persistants, seuils d’avertissement et d’alarme, traversée des deux seuils en une avancée, expiration dans les deux phases, remise à zéro et second cycle.
 
 ### Essai matériel du 19 octobre 2026
 

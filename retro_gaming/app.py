@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pygame
 
-from retro_gaming.config import load_config
+from retro_gaming.config import MODIFIERS, load_config
 from retro_gaming.session import Phase, Session
 
 
@@ -212,9 +212,40 @@ def _tone(frequency: float, seconds: float, volume: float = 0.13) -> pygame.mixe
     return pygame.mixer.Sound(buffer=samples.tobytes())
 
 
+def _draw_session_status(surface: pygame.Surface, remaining: float, warning: bool, test_mode: bool) -> None:
+    color = AMBER if warning else GREEN
+    pygame.draw.rect(surface, PANEL, pygame.Rect(792, 74, 367, 120), border_radius=7)
+    pygame.draw.rect(surface, color, pygame.Rect(792, 74, 367, 120), 1, border_radius=7)
+    _label(surface, _font(14), "TEMPS RESTANT", (811, 88), color)
+    minutes, seconds = divmod(math.ceil(remaining), 60)
+    _label(surface, _font(32, bold=True), f"{minutes:02}:{seconds:02}", (811, 113), WHITE)
+    if warning:
+        _label(surface, _font(14, bold=True), "FIN DE SESSION PROCHE", (811, 159), AMBER)
+    if test_mode:
+        _label(surface, _font(15, bold=True), "MODE TEST", (1045, 35), AMBER)
+
+
+def _draw_end(surface: pygame.Surface, test_mode: bool) -> None:
+    surface.fill(BACKGROUND)
+    _draw_grid(surface)
+    _label(surface, _font(44, bold=True), "SESSION TERMINEE", (350, 223), AMBER)
+    _label(surface, _font(24), "Le temps est ecoule. Merci a cette equipe.", (326, 310), WHITE)
+    _label(surface, _font(21), "Animateur : remettre le laboratoire a zero pour l'equipe suivante.", (171, 391), GREEN)
+    _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + R", (419, 474), GREEN_DIM)
+    if test_mode:
+        _label(surface, _font(15, bold=True), "MODE TEST", (1045, 35), AMBER)
+
+
+def _reset_matches(event: pygame.event.Event) -> bool:
+    return (event.type == pygame.KEYDOWN and event.key == pygame.K_r
+            and all(event.mod & MODIFIERS[name] for name in ("ctrl", "alt", "meta"))
+            and not event.mod & MODIFIERS["shift"])
+
+
 def run() -> None:
     parser = argparse.ArgumentParser(description="Laboratoire 1986")
     parser.add_argument("--config", type=Path, default=Path(__file__).resolve().parents[1] / "config.json")
+    parser.add_argument("--test-mode", action="store_true", help="Accélère les délais à 10 % sans modifier le fichier de configuration")
     args = parser.parse_args()
     pygame.mixer.pre_init(frequency=44100, size=-16, channels=1)
     pygame.init()
@@ -223,16 +254,21 @@ def run() -> None:
         screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Laboratoire 1986 | Terminal de surveillance")
         clock = pygame.time.Clock()
-        session = Session(config.session_seconds, config.possession_seconds)
+        scale = 0.1 if args.test_mode else 1.0
+        session = Session(config.session_seconds * scale, config.possession_seconds * scale,
+                          config.warning_seconds * scale)
         started_at = pygame.time.get_ticks()
         previous_tick = started_at
         previous_phase = Phase.LABORATOIRE
         had_contact = False
+        warning_active = False
         sounds = None
         contact_sound = None
         if pygame.mixer.get_init():
             sounds = {Phase.POSSESSION: _tone(83, 1.1), Phase.ELF: _tone(659, 0.7)}
             contact_sound = _tone(493, 0.45)
+            warning_sound = _tone(440, 0.7)
+            alarm_sound = _tone(220, 1.4, 0.18)
         running = True
         while running:
             action = None
@@ -241,7 +277,9 @@ def run() -> None:
                     event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
                 ):
                     running = False
-                elif config.matches(event):
+                elif _reset_matches(event):
+                    action = "reinitialiser"
+                elif config.matches(event) and action != "reinitialiser":
                     action = "declencher_mystere"
             if not running:
                 break
@@ -250,6 +288,19 @@ def run() -> None:
             delta = (now - previous_tick) / 1000
             previous_tick = now
             state = session.advance(delta, action)
+            if action == "reinitialiser":
+                if pygame.mixer.get_init():
+                    pygame.mixer.stop()
+                had_contact = False
+                warning_active = False
+                started_at = now
+            if "avertissement" in state.events:
+                warning_active = True
+                if pygame.mixer.get_init():
+                    warning_sound.play()
+            if "alarme" in state.events and pygame.mixer.get_init():
+                pygame.mixer.stop()
+                alarm_sound.play()
             if state.phase != previous_phase and sounds and state.phase in sounds:
                 sounds[state.phase].play()
             if state.phase is Phase.POSSESSION and state.messages and not had_contact:
@@ -260,11 +311,17 @@ def run() -> None:
             if state.phase is Phase.LABORATOIRE:
                 _draw_welcome(screen, elapsed)
             elif state.phase is Phase.POSSESSION:
-                _draw_possession(screen, config.session_seconds - state.remaining_seconds, config.possession_seconds, state.messages)
+                _draw_possession(screen, session.session_seconds - state.remaining_seconds, session.possession_seconds, state.messages)
             elif state.phase is Phase.ELF:
                 _draw_elf(screen, elapsed, state.messages)
+            elif state.phase is Phase.FIN:
+                _draw_end(screen, args.test_mode)
             else:
                 raise AssertionError(f"Phase sans écran : {state.phase}")
+            if state.phase in (Phase.POSSESSION, Phase.ELF):
+                _draw_session_status(screen, state.remaining_seconds, warning_active, args.test_mode)
+            elif state.phase is Phase.LABORATOIRE and args.test_mode:
+                _label(screen, _font(15, bold=True), "MODE TEST", (1045, 35), AMBER)
             pygame.display.flip()
             clock.tick(FPS)
     finally:
