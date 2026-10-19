@@ -98,6 +98,7 @@ class Game:
             delta_x = self._enemy_direction * 80 * seconds
             left = min(enemy.x for enemy in enemies) + delta_x - ENEMY_HALF_WIDTH
             right = max(enemy.x for enemy in enemies) + delta_x + ENEMY_HALF_WIDTH
+            descent = 0
             if left < 20 or right > state.width - 20:
                 self._enemy_direction *= -1
                 # Reflect the overshoot so movement is independent of frame count.
@@ -105,9 +106,8 @@ class Game:
                     delta_x += 2 * (20 - left)
                 else:
                     delta_x -= 2 * (right - (state.width - 20))
-                enemies = [Enemy(enemy.x + delta_x, enemy.y + 28) for enemy in enemies]
-            else:
-                enemies = [Enemy(enemy.x + delta_x, enemy.y) for enemy in enemies]
+                descent = 28
+            enemies = [Enemy(enemy.x + delta_x, enemy.y + descent) for enemy in enemies]
 
         surviving_shots = []
         for shot in shots:
