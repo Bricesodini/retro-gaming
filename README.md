@@ -1,6 +1,6 @@
 # Laboratoire 1986 — POC Mystère / Tension
 
-Une fenêtre Pygame CE présente le terminal de laboratoire pendant l'introduction. L'animateur choisit Mystère ou Tension dans la configuration, puis déclenche discrètement la possession. Les diagnostics se dérèglent, des interférences et des racines apparaissent progressivement, puis Elf prend contact et annonce un défi. Tension amplifie les déformations, ajoute une silhouette abstraite dans la chambre du signal et rend le grondement plus présent. La trame et les messages sont identiques. Cette tranche s'arrête à l'annonce : aucun jeu n'est encore disponible.
+Une fenêtre Pygame CE présente le terminal de laboratoire pendant l'introduction. L'animateur choisit Mystère ou Tension dans la configuration, puis déclenche discrètement la possession. Les diagnostics se dérèglent, des interférences et des racines apparaissent progressivement, puis Elf prend contact et annonce un défi. Tension amplifie les déformations, ajoute une silhouette abstraite dans la chambre du signal et rend le grondement plus présent. La trame et les messages sont identiques. Le parcours POC s'arrête à l'annonce ; le combat spatial se lance séparément.
 
 ## Versions et installation
 
@@ -26,6 +26,14 @@ Ces versions ont été installées et essayées sur macOS Apple Silicon, la plat
 L'accueil affiche des diagnostics autonomes, sans temps actif. Avec la fenêtre au premier plan, appuyer sur **Contrôle + Option + Commande + Espace** sur Mac pour commencer. Le chronomètre de session démarre alors, y compris pendant les douze secondes initiales de possession. Un appui prolongé ou répété ne relance rien. Elf apparaît ensuite avec un texte qui reste affiché. Le temps restant est affiché pendant la session. À 60 secondes de la fin par défaut, un avertissement visuel et sonore apparaît une seule fois. À expiration, une alarme retentit une seule fois et un écran de fin attend l’animateur. **Contrôle + Option + Commande + Retour arrière (Backspace)** réinitialise depuis toute phase : le laboratoire revient avec un chronomètre neuf et les sons précédents sont arrêtés. Ce geste est distinct du déclenchement. Fermer avec **Échap** ou le bouton de la fenêtre.
 
 Les effets visuels, le grondement et les sons brefs, dont l’avertissement et l’alarme, sont produits par le code. Les mouvements sont progressifs, sans flash rapide ni sursaut brutal. Il n'y a ni voix, ni ROM, ni média extrait de la série.
+
+## Jouer au combat spatial
+
+```sh
+.venv/bin/python -m retro_gaming.space_combat
+```
+
+Déplacer le vaisseau avec les flèches gauche/droite ou **A/D**. Maintenir **Espace** pour tirer. Détruire toute la vague gagne ; un ennemi qui atteint le bas fait perdre. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce premier jeu est indépendant du parcours POC ; les deux autres jeux ne sont pas encore disponibles.
 
 ## Configuration
 
@@ -60,6 +68,8 @@ Pour parcourir la session plus vite, lancer :
 ```
 
 Les tests de session contrôlent le temps sans attendre : accueil inactif, déclenchement unique, ordre possession puis Elf, temps consommé pendant la possession et messages persistants, seuils d’avertissement et d’alarme, traversée des deux seuils en une avancée, expiration dans les deux phases, remise à zéro et second cycle.
+
+Les tests du combat spatial pilotent la vague avec du temps et des entrées fournis par le test : déplacement, tir et destruction, mouvement des ennemis, victoire et échec persistants.
 
 ### Comparer les deux ambiances
 
