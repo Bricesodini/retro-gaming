@@ -26,6 +26,26 @@ class WelcomeJourneyTest(unittest.TestCase):
 
 
 class MysteryJourneyTest(unittest.TestCase):
+    def test_both_variants_share_narrative_timing_and_alerts(self):
+        journeys = []
+        for variant in ("Mystère", "Tension"):
+            session = Session(session_seconds=30, possession_seconds=8, warning_seconds=10,
+                              variant=variant)
+            journeys.append([
+                session.advance(0, "declencher_mystere"),
+                session.advance(6, None),
+                session.advance(2, None),
+                session.advance(12, None),
+                session.advance(10, None),
+            ])
+        self.assertEqual(journeys[0], journeys[1])
+        self.assertEqual([state.phase for state in journeys[0]],
+                         [Phase.POSSESSION, Phase.POSSESSION, Phase.ELF, Phase.ELF, Phase.FIN])
+        self.assertEqual([state.remaining_seconds for state in journeys[0]],
+                         [30, 24, 22, 10, 0])
+        self.assertEqual([state.events for state in journeys[0]],
+                         [(), (), (), ("avertissement",), ("alarme",)])
+
     def test_trigger_starts_once_and_elf_message_persists(self):
         session = Session(session_seconds=180, possession_seconds=12)
 

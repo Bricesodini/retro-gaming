@@ -27,6 +27,7 @@ class Config:
     warning_seconds: float
     trigger_key: int
     trigger_modifiers: tuple[str, ...]
+    variant: str
 
     def matches(self, event: pygame.event.Event) -> bool:
         return (
@@ -47,6 +48,9 @@ def load_config(path: Path) -> Config:
         session_seconds = float(data["session_seconds"])
         possession_seconds = float(data["possession_seconds"])
         warning_seconds = float(data["warning_seconds"])
+        variant = data["variant"]
+        if variant not in ("Mystère", "Tension"):
+            raise ValueError("variant inconnue : choisir Mystère ou Tension")
         trigger = data["trigger"]
         key = pygame.key.key_code(trigger["key"])
         modifiers = tuple(trigger["modifiers"])
@@ -63,6 +67,6 @@ def load_config(path: Path) -> Config:
             raise ValueError("la possession doit être plus courte que la session")
         if warning_seconds >= session_seconds:
             raise ValueError("l’avertissement doit être à l’intérieur de la session")
-        return Config(session_seconds, possession_seconds, warning_seconds, key, modifiers)
+        return Config(session_seconds, possession_seconds, warning_seconds, key, modifiers, variant)
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
         raise ValueError(f"Configuration invalide dans {path} : {error}") from error

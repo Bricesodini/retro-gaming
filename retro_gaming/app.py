@@ -135,12 +135,14 @@ def _draw_welcome(surface: pygame.Surface, elapsed: float, active: bool = False)
     _label(surface, _font(13), "FERMER : ECHAP OU BOUTON DE LA FENETRE", (40, 721), GREEN_DIM)
 
 
-def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float, messages: tuple[str, ...]) -> None:
+def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float,
+                     messages: tuple[str, ...], variant: str) -> None:
     # The original terminal remains visible beneath a slowly growing disturbance.
     progress = min(1, elapsed / duration)
     _draw_welcome(surface, elapsed, active=True)
     veil = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-    veil.fill((76, 12, 22, int(42 * progress)))
+    tension = variant == "Tension"
+    veil.fill((76, 12, 22, int((64 if tension else 42) * progress)))
     surface.blit(veil, (0, 0))
 
     diagnostics = pygame.Rect(40, 244, 738, 386)
@@ -156,18 +158,41 @@ def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float, m
         _label(surface, _font(17), line, (64, 330 + index * 49), RED)
 
     # Sparse interference: no full-screen flashes and no random frame-to-frame jumps.
-    for index in range(int(progress * 9)):
-        y = 318 + index * 39 + int(3 * math.sin(elapsed * 0.8 + index))
-        pygame.draw.line(surface, RED_DIM, (795, y), (1146, y), 1)
+    for index in range(int(progress * (16 if tension else 9))):
+        y = 318 + index * (10 if tension else 39) + int(3 * math.sin(elapsed * 0.8 + index))
+        if y < 488:
+            displacement = int((13 if tension else 0) * progress * math.sin(elapsed * 0.6 + index))
+            pygame.draw.line(surface, RED_DIM, (795 + displacement, y), (1146, y),
+                             2 if tension else 1)
+
+    if tension:
+        # An original, abstract shadow in the signal chamber; slow movement only.
+        chamber = pygame.Surface((362, 244), pygame.SRCALPHA)
+        sway = 9 * math.sin(elapsed * 0.45)
+        spread = 55 * progress
+        outline = [
+            (181 + sway, 220),
+            (181 - spread, 180),
+            (181 - spread * 0.65, 120),
+            (181 - spread * 0.8, 55),
+            (181, 30 - 12 * progress),
+            (181 + spread * 0.8, 55),
+            (181 + spread * 0.65, 120),
+            (181 + spread, 180),
+        ]
+        pygame.draw.polygon(chamber, (35, 5, 13, int(125 * progress)), outline)
+        pygame.draw.lines(chamber, (150, 62, 67, int(120 * progress)), True, outline, 2)
+        surface.blit(chamber, (798, 244))
 
     # Each branch grows with the phase and bends smoothly, like roots along the bezel.
-    for branch in range(7):
+    for branch in range(10 if tension else 7):
         end = int(4 + progress * 14)
         base_y = 200 + branch * 85
         points = []
         for step in range(end):
             x = int(1199 - step * (9 + branch % 3))
-            y = int(base_y + step * (3 if branch % 2 else -3) + 9 * math.sin(step * 0.6 + branch))
+            y = int(base_y + step * (3 if branch % 2 else -3) +
+                    (15 if tension else 9) * math.sin(step * 0.6 + branch))
             points.append((x, y))
         if len(points) > 1:
             pygame.draw.lines(surface, RED_DIM, False, points, 2)
@@ -209,6 +234,21 @@ def _tone(frequency: float, seconds: float, volume: float = 0.13) -> pygame.mixe
         wobble = 1 + 0.015 * math.sin(t * 9)
         value = math.sin(2 * math.pi * frequency * wobble * t)
         samples.append(int(32767 * volume * envelope * value))
+    return pygame.mixer.Sound(buffer=samples.tobytes())
+
+
+def _rumble(variant: str) -> pygame.mixer.Sound:
+    """Loopable, original low drone with a stronger but still gradual Tension mix."""
+    sample_rate = 44100
+    seconds = 4
+    volume = 0.12 if variant == "Mystère" else 0.22
+    samples = array("h")
+    for i in range(sample_rate * seconds):
+        t = i / sample_rate
+        swell = 0.82 + 0.18 * math.sin(2 * math.pi * 0.25 * t)
+        value = (0.72 * math.sin(2 * math.pi * 48 * t) +
+                 0.28 * math.sin(2 * math.pi * 64 * t))
+        samples.append(int(32767 * volume * swell * value))
     return pygame.mixer.Sound(buffer=samples.tobytes())
 
 
@@ -263,7 +303,7 @@ def run() -> None:
         clock = pygame.time.Clock()
         scale = 0.1 if args.test_mode else 1.0
         session = Session(config.session_seconds * scale, config.possession_seconds * scale,
-                          config.warning_seconds * scale)
+                          config.warning_seconds * scale, variant=config.variant)
         started_at = pygame.time.get_ticks()
         previous_tick = started_at
         previous_phase = Phase.LABORATOIRE
@@ -272,8 +312,10 @@ def run() -> None:
         combined_alerts = False
         sounds = None
         contact_sound = None
+        drone_channel = None
         if pygame.mixer.get_init():
-            sounds = {Phase.POSSESSION: _tone(83, 1.1), Phase.ELF: _tone(659, 0.7)}
+            sounds = {Phase.ELF: _tone(659, 0.7)}
+            drone = _rumble(config.variant)
             contact_sound = _tone(493, 0.45)
             warning_sound = _tone(440, 0.7)
             alarm_sound = _tone(220, 1.4, 0.18)
@@ -315,6 +357,12 @@ def run() -> None:
                     alarm_sound.play()
             if state.phase != previous_phase and sounds and state.phase in sounds:
                 sounds[state.phase].play()
+            if state.phase != previous_phase and pygame.mixer.get_init():
+                if state.phase is Phase.POSSESSION:
+                    drone_channel = drone.play(loops=-1, fade_ms=700)
+                elif drone_channel:
+                    drone_channel.fadeout(400)
+                    drone_channel = None
             if state.phase is Phase.POSSESSION and state.messages and not had_contact:
                 had_contact = True
                 if contact_sound:
@@ -323,7 +371,8 @@ def run() -> None:
             if state.phase is Phase.LABORATOIRE:
                 _draw_welcome(screen, elapsed)
             elif state.phase is Phase.POSSESSION:
-                _draw_possession(screen, session.session_seconds - state.remaining_seconds, session.possession_seconds, state.messages)
+                _draw_possession(screen, session.session_seconds - state.remaining_seconds,
+                                 session.possession_seconds, state.messages, config.variant)
             elif state.phase is Phase.ELF:
                 _draw_elf(screen, elapsed, state.messages)
             elif state.phase is Phase.FIN:

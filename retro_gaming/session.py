@@ -22,7 +22,9 @@ class SessionState:
 
 class Session:
     def __init__(self, session_seconds: float = 300, possession_seconds: float = 12,
-                 warning_seconds: float = 60):
+                 warning_seconds: float = 60, variant: str = "Mystère"):
+        if variant not in ("Mystère", "Tension"):
+            raise ValueError("Variante inconnue : choisir Mystère ou Tension.")
         if any(not math.isfinite(value) or value <= 0 for value in
                (session_seconds, possession_seconds, warning_seconds)):
             raise ValueError("Les durées de session, de possession et d'avertissement doivent être positives et finies.")
