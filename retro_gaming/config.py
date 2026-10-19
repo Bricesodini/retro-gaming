@@ -8,6 +8,10 @@ from pathlib import Path
 import pygame
 
 
+RESET_KEY = pygame.K_BACKSPACE
+RESET_MODIFIERS = ("ctrl", "alt", "meta")
+
+
 MODIFIERS = {
     "ctrl": pygame.KMOD_CTRL,
     "alt": pygame.KMOD_ALT,
@@ -50,6 +54,8 @@ def load_config(path: Path) -> Config:
             raise ValueError("la liste des modificateurs doit être unique et non vide")
         if any(name not in MODIFIERS for name in modifiers):
             raise ValueError("modificateur inconnu (ctrl, alt, meta, shift)")
+        if key == RESET_KEY and set(modifiers) == set(RESET_MODIFIERS):
+            raise ValueError("le déclenchement ne peut pas utiliser le raccourci de remise à zéro (Ctrl + Option + Commande + Backspace)")
         if any(not math.isfinite(value) or value <= 0 for value in
                (session_seconds, possession_seconds, warning_seconds)):
             raise ValueError("les durées de session, possession et avertissement doivent être positives et finies")

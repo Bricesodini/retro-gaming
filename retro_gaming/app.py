@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pygame
 
-from retro_gaming.config import MODIFIERS, load_config
+from retro_gaming.config import MODIFIERS, RESET_KEY, RESET_MODIFIERS, load_config
 from retro_gaming.session import Phase, Session
 
 
@@ -235,7 +235,7 @@ def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -
     _label(surface, _font(44, bold=True), "SESSION TERMINEE", (350, 223), AMBER)
     _label(surface, _font(24), "Le temps est ecoule. Merci a cette equipe.", (326, 310), WHITE)
     _label(surface, _font(21), "Animateur : remettre le laboratoire a zero pour l'equipe suivante.", (171, 391), GREEN)
-    _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + R", (419, 474), GREEN_DIM)
+    _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + BACKSPACE", (419, 474), GREEN_DIM)
     if combined_alerts:
         _label(surface, _font(17, bold=True), "AVERTISSEMENT DE FIN EMIS", (445, 550), AMBER)
     if test_mode:
@@ -243,9 +243,10 @@ def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -
 
 
 def _reset_matches(event: pygame.event.Event) -> bool:
-    return (event.type == pygame.KEYDOWN and event.key == pygame.K_r
-            and all(event.mod & MODIFIERS[name] for name in ("ctrl", "alt", "meta"))
-            and not event.mod & MODIFIERS["shift"])
+    return (event.type == pygame.KEYDOWN and event.key == RESET_KEY
+            and all(event.mod & MODIFIERS[name] for name in RESET_MODIFIERS)
+            and not any(event.mod & flag for name, flag in MODIFIERS.items()
+                        if name not in RESET_MODIFIERS))
 
 
 def run() -> None:

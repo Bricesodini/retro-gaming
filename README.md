@@ -23,7 +23,7 @@ Ces versions ont été installées et essayées sur macOS Apple Silicon. Sur Lin
 .venv/bin/python -m retro_gaming
 ```
 
-L'accueil affiche des diagnostics autonomes, sans temps actif. Avec la fenêtre au premier plan, appuyer sur **Contrôle + Option + Commande + Espace** sur Mac pour commencer. Le chronomètre de session démarre alors, y compris pendant les douze secondes initiales de possession. Un appui prolongé ou répété ne relance rien. Elf apparaît ensuite avec un texte qui reste affiché. Le temps restant est affiché pendant la session. À 60 secondes de la fin par défaut, un avertissement visuel et sonore apparaît une seule fois. À expiration, une alarme retentit une seule fois et un écran de fin attend l’animateur. **Contrôle + Option + Commande + R** réinitialise depuis toute phase : le laboratoire revient avec un chronomètre neuf et les sons précédents sont arrêtés. Ce geste est distinct du déclenchement. Fermer avec **Échap** ou le bouton de la fenêtre.
+L'accueil affiche des diagnostics autonomes, sans temps actif. Avec la fenêtre au premier plan, appuyer sur **Contrôle + Option + Commande + Espace** sur Mac pour commencer. Le chronomètre de session démarre alors, y compris pendant les douze secondes initiales de possession. Un appui prolongé ou répété ne relance rien. Elf apparaît ensuite avec un texte qui reste affiché. Le temps restant est affiché pendant la session. À 60 secondes de la fin par défaut, un avertissement visuel et sonore apparaît une seule fois. À expiration, une alarme retentit une seule fois et un écran de fin attend l’animateur. **Contrôle + Option + Commande + Retour arrière (Backspace)** réinitialise depuis toute phase : le laboratoire revient avec un chronomètre neuf et les sons précédents sont arrêtés. Ce geste est distinct du déclenchement. Fermer avec **Échap** ou le bouton de la fenêtre.
 
 Les effets visuels et les sons brefs, dont l’avertissement et l’alarme, sont produits par le code. Il n'y a ni voix, ni ROM, ni média extrait de la série. La variante Tension sera traitée dans un ticket suivant.
 
@@ -41,7 +41,7 @@ Le fichier contient `session_seconds` (300 par défaut), `possession_seconds` (1
 {"session_seconds": 300, "possession_seconds": 12, "warning_seconds": 60, "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "shift"]}}
 ```
 
-Cette alternative est configurable mais n'a pas été essayée sur Omarchy. Une configuration invalide affiche une erreur avant d'ouvrir la fenêtre.
+Cette alternative est configurable mais n'a pas été essayée sur Omarchy. La combinaison réservée à la remise à zéro est refusée comme déclencheur, même si l’ordre des modificateurs change. Une configuration invalide affiche une erreur avant d'ouvrir la fenêtre.
 
 ## Mode test
 
