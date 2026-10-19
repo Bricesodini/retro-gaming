@@ -157,32 +157,29 @@ def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float,
     for index, line in enumerate(anomalies[: max(1, int(progress * 3) + 1)]):
         _label(surface, _font(17), line, (64, 330 + index * 49), RED)
 
-    # Sparse interference: no full-screen flashes and no random frame-to-frame jumps.
-    for index in range(int(progress * (16 if tension else 9))):
-        y = 318 + index * (10 if tension else 39) + int(3 * math.sin(elapsed * 0.8 + index))
-        if y < 488:
-            displacement = int((13 if tension else 0) * progress * math.sin(elapsed * 0.6 + index))
-            pygame.draw.line(surface, RED_DIM, (795 + displacement, y), (1146, y),
-                             2 if tension else 1)
-
     if tension:
-        # An original, abstract shadow in the signal chamber; slow movement only.
+        # A broad, slowly moving abstract presence in the signal chamber.
         chamber = pygame.Surface((362, 244), pygame.SRCALPHA)
-        sway = 9 * math.sin(elapsed * 0.45)
-        spread = 55 * progress
-        outline = [
-            (181 + sway, 220),
-            (181 - spread, 180),
-            (181 - spread * 0.65, 120),
-            (181 - spread * 0.8, 55),
-            (181, 30 - 12 * progress),
-            (181 + spread * 0.8, 55),
-            (181 + spread * 0.65, 120),
-            (181 + spread, 180),
-        ]
-        pygame.draw.polygon(chamber, (35, 5, 13, int(125 * progress)), outline)
-        pygame.draw.lines(chamber, (150, 62, 67, int(120 * progress)), True, outline, 2)
+        sway = 7 * math.sin(elapsed * 0.35)
+        spread = 115 * progress
+        left, right = [], []
+        for y in range(45, 211, 11):
+            contour = math.sin(math.pi * (y - 45) / 165) ** 0.55
+            ripple = 0.12 * math.sin(y * 0.095 + elapsed * 0.45)
+            left.append((181 + sway - spread * (contour + ripple), y))
+            right.append((181 + sway + spread * (contour - ripple), y))
+        outline = left + right[::-1]
+        pygame.draw.polygon(chamber, (54, 9, 19, int(215 * progress)), outline)
+        pygame.draw.lines(chamber, (203, 79, 82, int(230 * progress)), True, outline, 3)
         surface.blit(chamber, (798, 244))
+
+    # Interference grows steadily; no full-screen flashes or random jumps.
+    for index in range(int(progress * (30 if tension else 9))):
+        y = 318 + index * (7 if tension else 39) + int(3 * math.sin(elapsed * 0.8 + index))
+        if y < 448:
+            displacement = int((18 if tension else 0) * progress * math.sin(elapsed * 0.6 + index))
+            pygame.draw.line(surface, (153, 70, 75) if tension else RED_DIM,
+                             (795 + displacement, y), (1146, y), 2 if tension else 1)
 
     # Each branch grows with the phase and bends smoothly, like roots along the bezel.
     for branch in range(10 if tension else 7):
@@ -241,13 +238,20 @@ def _rumble(variant: str) -> pygame.mixer.Sound:
     """Loopable, original low drone with a stronger but still gradual Tension mix."""
     sample_rate = 44100
     seconds = 4
-    volume = 0.12 if variant == "Mystère" else 0.22
+    volume = 0.12 if variant == "Mystère" else 0.32
     samples = array("h")
     for i in range(sample_rate * seconds):
         t = i / sample_rate
         swell = 0.82 + 0.18 * math.sin(2 * math.pi * 0.25 * t)
-        value = (0.72 * math.sin(2 * math.pi * 48 * t) +
-                 0.28 * math.sin(2 * math.pi * 64 * t))
+        if variant == "Mystère":
+            value = (0.72 * math.sin(2 * math.pi * 48 * t) +
+                     0.28 * math.sin(2 * math.pi * 64 * t))
+        else:
+            # Midrange harmonics carry the drone on ordinary speakers.
+            value = (0.28 * math.sin(2 * math.pi * 48 * t) +
+                     0.30 * math.sin(2 * math.pi * 120 * t) +
+                     0.26 * math.sin(2 * math.pi * 180 * t) +
+                     0.16 * math.sin(2 * math.pi * 240 * t))
         samples.append(int(32767 * volume * swell * value))
     return pygame.mixer.Sound(buffer=samples.tobytes())
 
