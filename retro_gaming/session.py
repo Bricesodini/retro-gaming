@@ -11,10 +11,12 @@ class SessionState:
 
 
 class Session:
-    def advance(self, elapsed_seconds: float) -> SessionState:
-        """Observe the session after elapsed real time.
+    def advance(
+        self, elapsed_seconds: float, animator_action: str | None
+    ) -> SessionState:
+        """Observe the session after an animator action and elapsed time.
 
-        The laboratory has no active session clock. Future animator actions
-        can start one without changing this public observation boundary.
+        Only the welcome phase is implemented. No action starts a session yet,
+        and time spent in the laboratory does not start a clock.
         """
         return SessionState("laboratoire", None, ())

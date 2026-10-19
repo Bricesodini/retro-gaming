@@ -150,7 +150,7 @@ def run() -> None:
             if not running:
                 break
             elapsed = (pygame.time.get_ticks() - started_at) / 1000
-            state = session.advance(elapsed)
+            state = session.advance(elapsed, animator_action=None)
             _draw_welcome(screen, elapsed, state.phase)
             pygame.display.flip()
             clock.tick(FPS)

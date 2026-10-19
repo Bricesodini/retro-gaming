@@ -37,7 +37,7 @@ Fermer avec **Échap** ou le bouton de fermeture de la fenêtre. Les lignes du j
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-Le test vérifie le parcours observable de la session : phase laboratoire, absence de temps restant actif et absence d'alertes, même après une longue attente simulée. Ce point de test pourra recevoir les futures actions de l'animateur et les transitions de la session.
+Les tests vérifient le parcours observable de la session : phase laboratoire, absence de temps restant actif et absence d'alertes, même après une longue attente simulée ou une action d'animateur non attribuée. Ce point de test reçoit explicitement une action et le temps écoulé ; les futures transitions pourront s'y ajouter.
 
 ### État des plateformes
 
