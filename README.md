@@ -15,7 +15,7 @@ uv venv --python 3.11.11 --seed .venv
 .venv/bin/python -m pip install --requirement requirements.txt
 ```
 
-Ces versions ont été installées et essayées sur macOS Apple Silicon. Sur Linux, une session graphique et une sortie audio compatibles SDL sont nécessaires ; Omarchy reste à essayer.
+Ces versions ont été installées et essayées sur macOS Apple Silicon, la plateforme de déploiement visée. Linux et Omarchy ne font pas partie du périmètre de prise en charge.
 
 ## Démontrer le parcours
 
@@ -41,7 +41,7 @@ Le fichier contient `session_seconds` (300 par défaut), `possession_seconds` (1
 {"session_seconds": 300, "possession_seconds": 12, "warning_seconds": 60, "variant": "Tension", "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "shift"]}}
 ```
 
-Cette alternative est configurable mais n'a pas été essayée sur Omarchy. La combinaison réservée à la remise à zéro est refusée comme déclencheur, même si l’ordre des modificateurs change. Une configuration invalide affiche une erreur avant d'ouvrir la fenêtre.
+Cette alternative est configurable pour macOS si un conflit système est observé. La combinaison réservée à la remise à zéro est refusée comme déclencheur, même si l’ordre des modificateurs change. Une configuration invalide affiche une erreur avant d'ouvrir la fenêtre.
 
 ## Mode test
 
@@ -72,22 +72,17 @@ Garder les mêmes durées, le même volume de sortie et le même endroit d'obser
 
 Consigner les observations dans les conditions de la salle, avec les personnes réellement présentes. Ce POC ne fixe pas d'intensité adaptée à un âge précis.
 
-### Reprendre les vérifications sur la borne Omarchy
-
-Sur la borne Linux x86-64, reprendre les commandes d'installation et de lancement ci-dessus dans une session graphique avec sortie audio. Configurer d'abord une combinaison de déclenchement adaptée au clavier et à Omarchy ; vérifier qu'elle arrive réellement dans la fenêtre Pygame et qu'elle n'est pas capturée par le système. Vérifier séparément le retour à l'accueil par le raccourci de remise à zéro. Faire le parcours complet dans chaque variante, puis déclencher une deuxième session, en observant la lisibilité, les effets et les sons sur l'écran et les haut-parleurs de la borne. Noter les raccourcis effectivement essayés et tout conflit. Ni la touche Super ni la combinaison Mac ne sont présumées compatibles avec Omarchy.
-
 ### Essai matériel du 19 octobre 2026
 
 | Plateforme | Constat |
 | --- | --- |
 | macOS Apple Silicon | CPython 3.11.11 et pygame-ce 2.5.8 installés. Fenêtre Cocoa affichée. Un événement clavier envoyé par **System Events** à la fenêtre au premier plan avec Contrôle + Option + Commande + Espace a été reçu par Pygame : accueil → possession → Elf observés à l'écran. Aucun conflit système observé pendant cet essai. Il ne remplace pas un essai par pression physique du clavier ou d'un clavier déporté. La fenêtre a été fermée normalement. |
-| Linux x86-64 / Omarchy | Non essayé. Affichage, raccourci, audio et matériel cible restent à vérifier sur la borne. |
 
 Le mélangeur audio pygame-ce a été ouvert sur le Mac et l'application a déclenché ses sons générés. Aucun enregistrement acoustique indépendant ni jugement de qualité sonore n'a été effectué ; l'écoute en conditions d'animation et la calibration auprès du jeune public restent à faire.
 
 ### Inspection des variantes du 19 octobre 2026
 
-Le candidat actuel renforce Tension : présence abstraite plus grande et plus contrastée, parasites plus denses sans clignotement, et grondement enrichi à 120, 180 et 240 Hz. Mystère reste la base légère. Sur le Mac Apple Silicon disponible, deux images pygame-ce ont été rendues au même instant (8 secondes sur 12), et deux extraits WAV mono de quatre secondes ont été créés pour préparer la comparaison. Les fichiers locaux de cette inspection sont `/tmp/retro-gaming-ticket-5-round-2/mystere-8s.png`, `tension-8s.png`, `mystere-4s.wav` et `tension-4s.wav` dans ce même dossier. Le mélangeur audio s'est ouvert à 44,1 kHz ; les niveaux mesurés des grondements du nouveau candidat sont RMS 1 782 pour Mystère et 3 146 pour Tension, sans saturation numérique. Ces mesures décrivent le signal, pas son rendu acoustique. L'utilisateur a ensuite comparé les deux variantes dans le jeu et indiqué « la version 2 est mieux » ; la version 2 correspondait à Tension. Ce retour établit une préférence pour l'expérience globale sur le Mac essayé, sans attribuer cette préférence au son seul ni valider l'intensité auprès d'enfants ou en conditions d'animation. La capture automatique de la fenêtre lors d'un autre lancement distant n'avait montré aucune fenêtre Pygame ; elle ne contredit pas l'essai en jeu effectué par l'utilisateur. La pression physique du raccourci et l'essai sur Omarchy restent à vérifier.
+Le candidat actuel renforce Tension : présence abstraite plus grande et plus contrastée, parasites plus denses sans clignotement, et grondement enrichi à 120, 180 et 240 Hz. Mystère reste la base légère. Sur le Mac Apple Silicon disponible, deux images pygame-ce ont été rendues au même instant (8 secondes sur 12), et deux extraits WAV mono de quatre secondes ont été créés pour préparer la comparaison. Les fichiers locaux de cette inspection sont `/tmp/retro-gaming-ticket-5-round-2/mystere-8s.png`, `tension-8s.png`, `mystere-4s.wav` et `tension-4s.wav` dans ce même dossier. Le mélangeur audio s'est ouvert à 44,1 kHz ; les niveaux mesurés des grondements du nouveau candidat sont RMS 1 782 pour Mystère et 3 146 pour Tension, sans saturation numérique. Ces mesures décrivent le signal, pas son rendu acoustique. L'utilisateur a ensuite comparé les deux variantes dans le jeu et indiqué « la version 2 est mieux » ; la version 2 correspondait à Tension. Ce retour établit une préférence pour l'expérience globale sur le Mac essayé, sans attribuer cette préférence au son seul ni valider l'intensité auprès d'enfants ou en conditions d'animation. La capture automatique de la fenêtre lors d'un autre lancement distant n'avait montré aucune fenêtre Pygame ; elle ne contredit pas l'essai en jeu effectué par l'utilisateur. La pression physique du raccourci Mac reste à vérifier.
 
 Les API de clavier, événement, affichage et son suivent la [documentation officielle pygame-ce](https://pyga.me/docs/).
 
@@ -97,4 +92,4 @@ Sur le Mac Apple Silicon disponible, un environnement virtuel isolé a été cr�
 
 Un second essai sur le Mac M4 Max a affiché la fenêtre Pygame Cocoa. Avec cette fenêtre au premier plan, **System Events** a envoyé Contrôle + Option + Commande + Espace : la possession puis Elf ont été observés. En mode test, avec une configuration de 60 secondes de session, 12 secondes de possession et 30 secondes d'avertissement avant réduction à 10 %, l'avertissement visuel est apparu à **00:03**, puis l'écran de fin. Contrôle + Option + Commande + Retour arrière a rendu l'accueil sans chronomètre ; un nouveau déclenchement avec la même configuration a lancé une deuxième session, affichée à **00:05**. Tension a également été lancé en fenêtre visible, avec sa silhouette et ses interférences. Le mélangeur audio s'est initialisé à 44,1 kHz, en mono signé 16 bits ; la sortie système sélectionnée était les haut-parleurs du MacBook Pro. Les captures `mac-mystere-reset-config60.png` et `mac-mystere-elf-run2-config60.png`, ainsi que les configurations de cet essai, sont conservées dans le checkout principal sous `.scratch/orchestration/retro-gaming-poc-20261019/evidence/ticket-6/`.
 
-Le raccourci a été envoyé par logiciel, sans pression physique sur le clavier. L'initialisation du mélangeur ne mesure ni la qualité sonore perçue ni le niveau adapté à des enfants ; aucune calibration auprès du public n'a eu lieu. La borne Omarchy x86-64 n'était pas accessible pour ce ticket : installation, écran, audio, raccourcis et éventuels conflits système y restent à contrôler selon le protocole de reprise ci-dessus.
+Le raccourci a été envoyé par logiciel, sans pression physique sur le clavier. L'initialisation du mélangeur ne mesure ni la qualité sonore perçue ni le niveau adapté à des enfants ; aucune calibration auprès du public n'a eu lieu. Les validations produit visent uniquement macOS Apple Silicon.

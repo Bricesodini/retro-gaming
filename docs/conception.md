@@ -27,7 +27,7 @@ Les équipes traversent plusieurs salles et y récupèrent des chiffres. Leur co
 
 ## Contraintes du MVP demandées
 
-- Python/Pygame, développement sur macOS Apple Silicon et déploiement Linux Omarchy x86-64.
+- Python/Pygame, développement et déploiement sur macOS Apple Silicon. Linux et Omarchy ne sont pas des plateformes cibles.
 - Trois jeux originaux inspirés du labyrinthe à vider, du combat spatial par vagues et de l’empilement de blocs avec objectif de lignes.
 - Un joueur à la fois, trois tentatives par défaut, changement de joueur possible entre les tentatives et même jeu pendant le défi.
 - Objectifs, difficulté, nombre de tentatives, chiffre secret, durée globale et avertissement configurables extérieurement.
