@@ -3,6 +3,7 @@
 import pygame
 
 from retro_gaming.maze.game import Game, GameState, PlayerInput, Result
+from retro_gaming.rendering import draw_centered_label as _label
 
 
 CELL = 44
@@ -16,12 +17,6 @@ PELLET = (242, 187, 104)
 PLAYER = (112, 231, 214)
 ENEMY = (231, 113, 138)
 TEXT = (213, 238, 239)
-
-
-def _label(surface: pygame.Surface, font: pygame.font.Font, value: str,
-           center: tuple[int, int], color: tuple[int, int, int]) -> None:
-    image = font.render(value, True, color)
-    surface.blit(image, image.get_rect(center=center))
 
 
 def _draw(surface: pygame.Surface, state: GameState,

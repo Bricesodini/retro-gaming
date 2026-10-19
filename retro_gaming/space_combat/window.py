@@ -2,6 +2,7 @@
 
 import pygame
 
+from retro_gaming.rendering import draw_centered_label as _label
 from retro_gaming.space_combat.game import (
     ENEMY_HALF_HEIGHT, ENEMY_HALF_WIDTH, Game, GameState, PlayerInput, Result,
 )
@@ -13,12 +14,6 @@ CYAN = (108, 227, 226)
 PALE = (211, 244, 241)
 AMBER = (240, 184, 103)
 RED = (230, 106, 111)
-
-
-def _label(surface: pygame.Surface, font: pygame.font.Font, value: str,
-           center: tuple[int, int], color: tuple[int, int, int]) -> None:
-    image = font.render(value, True, color)
-    surface.blit(image, image.get_rect(center=center))
 
 
 def _draw_ship(surface: pygame.Surface, x: float, y: float) -> None:
