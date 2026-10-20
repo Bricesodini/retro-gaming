@@ -13,6 +13,7 @@ class Phase(Enum):
     JEU = "jeu"
     RESULTAT = "resultat"
     FIN = "fin"
+    ECHEC = "echec"
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,10 @@ class Session:
         self._choice_open = False
         self._active_game: str | None = None
         self._game_result: str | None = None
+        self._lost_games: list[str] = []
+        self._takeover_started: float | None = None
+        self._returning_elf = False
+        self._failed = False
 
     def advance(self, elapsed_seconds: float, animator_action: str | None,
                 game_result: str | None = None) -> SessionState:
@@ -62,6 +67,10 @@ class Session:
             self._choice_open = False
             self._active_game = None
             self._game_result = None
+            self._lost_games = []
+            self._takeover_started = None
+            self._returning_elf = False
+            self._failed = False
             return SessionState(Phase.LABORATOIRE, None, ())
         if self._active_seconds is None:
             if animator_action != "declencher_mystere":
@@ -91,6 +100,24 @@ class Session:
                 messages += ("ELF // Je vous entends. Restez ensemble.",)
             return SessionState(Phase.POSSESSION, remaining, tuple(events), messages,
                                 timer_visible=True)
+        if self._game_result == "defeat":
+            self._lost_games.append(self._active_game)
+            self._active_game = None
+            self._game_result = None
+            self._choice_open = False
+            self._takeover_started = elapsed
+            self._returning_elf = True
+        if self._takeover_started is not None:
+            if elapsed - self._takeover_started < self.possession_seconds:
+                return SessionState(Phase.POSSESSION, remaining, tuple(events),
+                                    ("ENTITE // Ce terminal est à moi.",),
+                                    timer_visible=True)
+            self._takeover_started = None
+            animator_action = None
+        if self._failed:
+            return SessionState(Phase.ECHEC, remaining, tuple(events),
+                                ("DEFI ECHOUE", "Elf n'a pas pu reprendre le laboratoire."),
+                                timer_visible=True)
         if self._active_game is not None:
             if self._game_result is None and game_result in ("victory", "defeat"):
                 self._game_result = game_result
@@ -102,18 +129,37 @@ class Session:
                                 timer_visible=True)
         if self._choice_open:
             game = animator_action.removeprefix("choisir_") if animator_action else None
-            if game in GAMES and animator_action.startswith("choisir_"):
+            if game in GAMES and game not in self._lost_games and animator_action.startswith("choisir_"):
                 self._active_game = game
                 return SessionState(Phase.JEU, remaining, tuple(events), active_game=game,
                                     timer_visible=True)
             return SessionState(Phase.CHOIX, remaining, tuple(events),
-                                ("ELF // Choisissez un jeu pour m'aider.",), GAMES,
+                                ("ELF // Choisissez un jeu pour m'aider.",),
+                                tuple(game for game in GAMES if game not in self._lost_games),
                                 timer_visible=True)
         if animator_action == "continuer":
+            if self._returning_elf and len(self._lost_games) == len(GAMES):
+                self._failed = True
+                return SessionState(Phase.ECHEC, remaining, tuple(events),
+                                    ("DEFI ECHOUE", "Elf n'a pas pu reprendre le laboratoire."),
+                                    timer_visible=True)
             self._choice_open = True
             return SessionState(Phase.CHOIX, remaining, tuple(events),
-                                ("ELF // Choisissez un jeu pour m'aider.",), GAMES,
+                                ("ELF // Choisissez un jeu pour m'aider.",),
+                                tuple(game for game in GAMES if game not in self._lost_games),
                                 timer_visible=True)
+        if self._returning_elf:
+            if len(self._lost_games) == len(GAMES):
+                return SessionState(Phase.ELF, remaining, tuple(events), (
+                    "ELF // Je suis revenue.",
+                    "Nous avons échoué à repousser l'entité.",
+                    "Appuyez sur ENTREE pour terminer.",
+                ), timer_visible=True)
+            return SessionState(Phase.ELF, remaining, tuple(events), (
+                "ELF // Je suis revenue.",
+                "Vous avez une nouvelle chance.",
+                "Choisissez un autre jeu pour repousser l'entité.",
+            ), timer_visible=True)
         return SessionState(Phase.ELF, remaining, tuple(events), (
             "ELF // C'est moi, Elf. Je retiens cette présence.",
             "L'entité a pris le contrôle du laboratoire.",

@@ -222,7 +222,7 @@ def _draw_elf(surface: pygame.Surface, elapsed: float, messages: tuple[str, ...]
     pygame.draw.line(surface, LINE, (68, 314), (1132, 314))
     for index, line in enumerate(messages):
         _label(surface, _font(25 if index == 0 else 22, bold=index == 0), line, (69, 335 + index * 48), WHITE)
-    _label(surface, _font(15), "ELF DEMANDE VOTRE AIDE  /  ENTREE POUR CHOISIR", (69, 583), AMBER)
+    _label(surface, _font(15), "ENTREE POUR CONTINUER", (69, 583), AMBER)
 
 
 GAME_LABELS = {
@@ -232,13 +232,16 @@ GAME_LABELS = {
 }
 
 
-def _draw_choice(surface: pygame.Surface, remaining: float, warning: bool, test_mode: bool) -> None:
+def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
+                 remaining: float, warning: bool, test_mode: bool) -> None:
     _draw_welcome(surface, 0, active=True)
     panel = pygame.Rect(40, 244, 1120, 386)
     _panel(surface, panel)
-    _label(surface, _font(25, True), "ELF // J'AI BESOIN DE VOUS", (68, 267), WHITE)
+    title = "ELF // NOUVELLE CHANCE" if len(available_games) < 3 else "ELF // J'AI BESOIN DE VOUS"
+    _label(surface, _font(25, True), title, (68, 267), WHITE)
     _label(surface, _font(17), "Choisissez un jeu. Trois vies pour relever le defi.", (68, 307), GREEN)
-    for index, (key, name, instruction) in enumerate(GAME_LABELS.values()):
+    for index, game_name in enumerate(available_games):
+        key, name, instruction = GAME_LABELS[game_name]
         y = 359 + index * 82
         pygame.draw.line(surface, LINE, (68, y - 13), (1130, y - 13))
         _label(surface, _font(27, True), key, (69, y), AMBER)
@@ -365,6 +368,18 @@ def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -
         _draw_test_mode_badge(surface)
 
 
+def _draw_failure(surface: pygame.Surface, remaining: float, warning: bool,
+                  test_mode: bool) -> None:
+    surface.fill(BACKGROUND)
+    _draw_grid(surface)
+    _label(surface, _font(44, bold=True), "DEFI ECHOUE", (395, 223), RED)
+    _label(surface, _font(24), "Les trois jeux sont perdus. Elf ne peut plus agir.", (262, 310), WHITE)
+    _label(surface, _font(21), "Animateur : remettre le laboratoire a zero pour l'equipe suivante.",
+           (171, 391), GREEN)
+    _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + BACKSPACE", (419, 474), GREEN_DIM)
+    _draw_session_status(surface, remaining, warning, test_mode)
+
+
 def _reset_matches(event: pygame.event.Event) -> bool:
     return (event.type == pygame.KEYDOWN and event.key == RESET_KEY
             and all(event.mod & MODIFIERS[name] for name in RESET_MODIFIERS)
@@ -392,7 +407,9 @@ def run() -> None:
         previous_phase = Phase.LABORATOIRE
         previous_state = session.advance(0, None)
         game = None
+        game_name = None
         game_time = 0.0
+        phase_started_at = started_at
         had_contact = False
         warning_active = False
         combined_alerts = False
@@ -437,6 +454,7 @@ def run() -> None:
             state = session.advance(delta, action, reported_result)
             if action == "reinitialiser":
                 game = None
+                game_name = None
                 game_time = 0.0
                 if pygame.mixer.get_init():
                     pygame.mixer.stop()
@@ -456,6 +474,8 @@ def run() -> None:
                     alarm_sound.play()
             if state.phase != previous_phase and sounds and state.phase in sounds:
                 sounds[state.phase].play()
+            if state.phase != previous_phase:
+                phase_started_at = now
             if state.phase != previous_phase and pygame.mixer.get_init():
                 if state.phase is Phase.POSSESSION:
                     drone_channel = drone.play(loops=-1, fade_ms=700)
@@ -470,8 +490,9 @@ def run() -> None:
             previous_phase = state.phase
             previous_state = state
             if state.phase is Phase.JEU:
-                if game is None:
+                if game is None or game_name != state.active_game:
                     game = _new_game(state.active_game)
+                    game_name = state.active_game
                     game_time = 0.0
                 else:
                     game.advance(delta, _game_input(state.active_game, pygame.key.get_pressed()))
@@ -479,17 +500,20 @@ def run() -> None:
             if state.phase is Phase.LABORATOIRE:
                 _draw_welcome(screen, elapsed)
             elif state.phase is Phase.POSSESSION:
-                _draw_possession(screen, session.session_seconds - state.remaining_seconds,
+                _draw_possession(screen, (now - phase_started_at) / 1000,
                                  session.possession_seconds, state.messages, config.variant)
             elif state.phase is Phase.ELF:
                 _draw_elf(screen, elapsed, state.messages)
             elif state.phase is Phase.CHOIX:
-                _draw_choice(screen, state.remaining_seconds, warning_active, args.test_mode)
+                _draw_choice(screen, state.available_games, state.remaining_seconds,
+                             warning_active, args.test_mode)
             elif state.phase in (Phase.JEU, Phase.RESULTAT):
                 _draw_game(screen, state.active_game, game.state, game_time,
                            state.remaining_seconds, warning_active, args.test_mode)
             elif state.phase is Phase.FIN:
                 _draw_end(screen, args.test_mode, combined_alerts)
+            elif state.phase is Phase.ECHEC:
+                _draw_failure(screen, state.remaining_seconds, warning_active, args.test_mode)
             else:
                 raise AssertionError(f"Phase sans écran : {state.phase}")
             if state.phase in (Phase.POSSESSION, Phase.ELF):
