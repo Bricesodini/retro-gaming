@@ -6,6 +6,20 @@ from retro_gaming.maze.game import Game, PlayerInput, Position, Result
 
 
 class MazeTests(unittest.TestCase):
+    def test_numeric_pellet_goal_changes_win_condition_through_game_advance(self):
+        rows = ("#####", "#P..#", "#####")
+        game = Game(rows, pellet_goal_percent=50, ghost_step_seconds=0.9, power_seconds=4)
+        won = game.advance(0.15, PlayerInput(right=True))
+        self.assertEqual(won.result, Result.VICTORY)
+        self.assertEqual(len(won.pellets), 1)
+
+    def test_numeric_ghost_and_power_timing_change_observed_state(self):
+        ghost = Game(("#######", "#P..E.#", "#######"), ghost_step_seconds=0.9)
+        self.assertEqual(ghost.advance(0.89).enemies, (Position(4, 1),))
+        self.assertEqual(ghost.advance(0.01).enemies, (Position(3, 1),))
+        power = Game(("#########", "#PoE....#", "#########"), power_seconds=4)
+        self.assertAlmostEqual(power.advance(0.15, PlayerInput(right=True)).frightened_seconds, 4)
+
     def test_player_moves_in_four_directions_and_walls_block(self):
         game = Game((
             "#####",

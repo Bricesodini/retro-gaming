@@ -6,6 +6,17 @@ from retro_gaming.space_combat.game import Game, PlayerInput, Result
 
 
 class SpaceCombatTests(unittest.TestCase):
+    def test_numeric_speed_and_salvo_cadence_change_play_through_game_advance(self):
+        standard = Game()
+        configured = Game(score_target=100, enemy_speed_px_per_second=160,
+                          salvo_interval_seconds=0.8)
+        standard_state = standard.advance(0.8)
+        state = configured.advance(0.8)
+        self.assertGreater(state.enemies[0].x, standard_state.enemies[0].x)
+        self.assertTrue(state.enemy_shots)
+        self.assertFalse(standard_state.enemy_shots)
+        self.assertEqual(state.score_target, 100)
+
     def test_player_moves_both_ways_and_stays_inside_the_playfield(self):
         game = Game()
         start = game.state.player_x

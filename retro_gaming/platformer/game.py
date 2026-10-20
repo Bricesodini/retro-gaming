@@ -153,7 +153,13 @@ class GameState:
 class Game:
     """Held controls + elapsed seconds expose all gameplay without a window."""
 
-    def __init__(self, level: Level = DEFAULT_LEVEL):
+    def __init__(self, level: Level = DEFAULT_LEVEL, goal_progress_percent: float = 100):
+        if (isinstance(goal_progress_percent, bool)
+                or not isinstance(goal_progress_percent, (int, float))
+                or not math.isfinite(goal_progress_percent)
+                or not 0 < goal_progress_percent <= 100):
+            raise ValueError("Goal progress percent must be between 0 and 100.")
+        self._goal_progress_percent = goal_progress_percent
         self.state = GameState(level, level.start_x, level.start_y, level.barrels,
                                Result.PLAYING, launch_interval=level.barrel_interval or 0,
                                fire_enemies=level.fire_enemies)
@@ -282,7 +288,9 @@ class Game:
                             result=Result.PLAYING if lives else Result.DEFEAT,
                             respawn_seconds=1.0 if lives else 0.0)
             self._vertical_speed = self._launch_elapsed = self._fire_elapsed = 0
-        elif abs(x - level.exit_x) <= 22 and abs(y - level.exit_y) <= 3:
+        elif ((self._goal_progress_percent < 100 and (climbing or grounded)
+               and progress * 100 >= self._goal_progress_percent)
+              or (abs(x - level.exit_x) <= 22 and abs(y - level.exit_y) <= 3)):
             state = replace(state, result=Result.VICTORY)
         self.state = state
 

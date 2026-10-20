@@ -81,9 +81,18 @@ class GameState:
 class Game:
     """Advance held inputs and elapsed seconds; terminal states stay visible."""
 
-    def __init__(self, rows: tuple[str, ...] = DEFAULT_ROWS):
+    def __init__(self, rows: tuple[str, ...] = DEFAULT_ROWS,
+                 pellet_goal_percent: float = 100,
+                 ghost_step_seconds: float = ENEMY_STEP_SECONDS,
+                 power_seconds: float = POWER_SECONDS):
         if not rows or not rows[0] or any(len(r) != len(rows[0]) for r in rows):
             raise ValueError("Maze rows must have one nonempty width.")
+        if (isinstance(pellet_goal_percent, bool) or not isinstance(pellet_goal_percent, (int, float))
+                or not math.isfinite(pellet_goal_percent) or not 0 < pellet_goal_percent <= 100):
+            raise ValueError("Pellet goal percent must be between 0 and 100.")
+        for name, value in (("Ghost step seconds", ghost_step_seconds), ("Power seconds", power_seconds)):
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be positive and finite.")
         players = [Position(x, y) for y, row in enumerate(rows)
                    for x, cell in enumerate(row) if cell == "P"]
         if len(players) != 1:
@@ -100,6 +109,10 @@ class Game:
             frozenset(Position(x, y) for y, row in enumerate(rows)
                       for x, cell in enumerate(row) if cell == "o"),
         )
+        self._pellet_goal_percent = pellet_goal_percent
+        self._pellet_total = len(self.state.pellets) + len(self.state.power_pellets)
+        self._ghost_step_seconds = ghost_step_seconds
+        self._power_seconds = power_seconds
         self._player_elapsed = self._enemy_elapsed = self._time = 0.0
 
     def advance(self, elapsed_seconds: float,
@@ -114,7 +127,7 @@ class Game:
                 remaining -= pause
                 continue
             step = min(remaining, PLAYER_STEP_SECONDS - self._player_elapsed,
-                       ENEMY_STEP_SECONDS - self._enemy_elapsed)
+                       self._ghost_step_seconds - self._enemy_elapsed)
             self._player_elapsed += step
             self._enemy_elapsed += step
             self._time += step
@@ -124,7 +137,7 @@ class Game:
                 self._player_elapsed = 0
                 self._move_player(player_input)
             if (self.state.result is Result.PLAYING and not self.state.respawn_seconds
-                    and self._enemy_elapsed + 1e-10 >= ENEMY_STEP_SECONDS):
+                    and self._enemy_elapsed + 1e-10 >= self._ghost_step_seconds):
                 self._enemy_elapsed = 0
                 self._move_ghosts()
         return self.state
@@ -151,12 +164,14 @@ class Game:
         score = state.score + (50 if is_power else 10 if target in state.pellets else 0)
         self.state = replace(state, player=target, direction=direction, score=score,
                              pellets=state.pellets - {target}, power_pellets=state.power_pellets - {target},
-                             frightened_seconds=POWER_SECONDS if is_power else state.frightened_seconds)
+                             frightened_seconds=self._power_seconds if is_power else state.frightened_seconds)
         if is_power:
             self._timers(0)
         self._contact()
+        collected = self._pellet_total - len(self.state.pellets) - len(self.state.power_pellets)
         if (self.state.result is Result.PLAYING and not self.state.respawn_seconds
-                and not self.state.pellets and not self.state.power_pellets):
+                and self._pellet_total > 0
+                and collected * 100 >= self._pellet_total * self._pellet_goal_percent):
             self.state = replace(self.state, result=Result.VICTORY)
 
     def _move_ghosts(self) -> None:

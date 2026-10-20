@@ -10,6 +10,45 @@ from retro_gaming.session import Phase, Session
 
 
 class TriggerConfigurationTest(unittest.TestCase):
+    def test_optional_game_numbers_load_and_invalid_values_explain_the_field(self):
+        base = {"session_seconds": 300, "possession_seconds": 12,
+                "warning_seconds": 60, "variant": "Mystère",
+                "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "meta"]}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps(base), encoding="utf-8")
+            defaults = load_config(path).games
+            self.assertEqual(defaults.maze.pellet_goal_percent, 100)
+            self.assertEqual(defaults.space_combat.score_target, 3000)
+            self.assertEqual(defaults.platformer.barrel_interval_seconds, 4)
+            base["games"] = {
+                "maze": {"pellet_goal_percent": 50, "ghost_step_seconds": 0.9,
+                         "power_seconds": 4},
+                "space_combat": {"score_target": 1200, "enemy_speed_px_per_second": 100,
+                                 "salvo_interval_seconds": 1.1},
+                "platformer": {"goal_progress_percent": 80, "barrel_interval_seconds": 5,
+                               "barrel_speed_px_per_second": 75,
+                               "barrel_speed_cap_px_per_second": 100,
+                               "fire_spawn_interval_seconds": 20, "fire_speed_px_per_second": 22},
+            }
+            path.write_text(json.dumps(base), encoding="utf-8")
+            configured = load_config(path).games
+            self.assertEqual(configured.maze.pellet_goal_percent, 50)
+            self.assertEqual(configured.space_combat.score_target, 1200)
+            self.assertEqual(configured.platformer.goal_progress_percent, 80)
+            for field, value in (("pellet_goal_percent", 0), ("ghost_step_seconds", -1),
+                                 ("power_seconds", "long")):
+                bad = json.loads(json.dumps(base))
+                bad["games"]["maze"][field] = value
+                path.write_text(json.dumps(bad), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, field):
+                    load_config(path)
+            bad = json.loads(json.dumps(base))
+            bad["games"]["platformer"]["barrel_speed_cap_px_per_second"] = 70
+            path.write_text(json.dumps(bad), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "barrel_speed_cap_px_per_second"):
+                load_config(path)
+
     def test_room_digit_loads_and_rejects_invalid_values(self):
         data = {"session_seconds": 30, "possession_seconds": 2,
                 "warning_seconds": 5, "variant": "Mystère",

@@ -3,12 +3,13 @@
 import argparse
 import math
 from array import array
+from dataclasses import replace
 from functools import lru_cache
 from pathlib import Path
 
 import pygame
 
-from retro_gaming.config import MODIFIERS, RESET_KEY, RESET_MODIFIERS, load_config
+from retro_gaming.config import GameSettings, MODIFIERS, RESET_KEY, RESET_MODIFIERS, load_config
 from retro_gaming.session import Phase, Session
 from retro_gaming.maze import game as maze_game, window as maze_window
 from retro_gaming.space_combat import game as space_game, window as space_window
@@ -234,7 +235,7 @@ GAME_LABELS = {
 
 def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
                  remaining: float, warning: bool, test_mode: bool,
-                 free_mode: bool = False) -> None:
+                 free_mode: bool = False, games: GameSettings = GameSettings()) -> None:
     _draw_welcome(surface, 0, active=True)
     panel = pygame.Rect(40, 244, 1120, 386)
     _panel(surface, panel)
@@ -246,6 +247,12 @@ def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
     _label(surface, _font(17), subtitle, (68, 307), GREEN)
     for index, game_name in enumerate(available_games):
         key, name, instruction = GAME_LABELS[game_name]
+        if game_name == "maze" and games.maze.pellet_goal_percent < 100:
+            instruction = f"Ramasser {games.maze.pellet_goal_percent:g}% des pastilles  |  Fleches / WASD"
+        elif game_name == "space_combat":
+            instruction = f"Atteindre {games.space_combat.score_target} points  |  Fleches / A D + Espace"
+        elif game_name == "platformer" and games.platformer.goal_progress_percent < 100:
+            instruction = f"Atteindre {games.platformer.goal_progress_percent:g}% du sommet  |  Fleches / WASD + Espace"
         y = 359 + index * 82
         pygame.draw.line(surface, LINE, (68, y - 13), (1130, y - 13))
         _label(surface, _font(27, True), key, (69, y), AMBER)
@@ -257,9 +264,29 @@ def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
         _draw_test_mode_badge(surface)
 
 
-def _new_game(name: str):
-    return {"maze": maze_game.Game, "space_combat": space_game.Game,
-            "platformer": platform_game.Game}[name]()
+def _new_game(name: str, games: GameSettings):
+    if name == "maze":
+        return maze_game.Game(pellet_goal_percent=games.maze.pellet_goal_percent,
+                              ghost_step_seconds=games.maze.ghost_step_seconds,
+                              power_seconds=games.maze.power_seconds)
+    if name == "space_combat":
+        return space_game.Game(score_target=games.space_combat.score_target,
+                               enemy_speed_px_per_second=games.space_combat.enemy_speed_px_per_second,
+                               salvo_interval_seconds=games.space_combat.salvo_interval_seconds)
+    settings = games.platformer
+    level = platform_game.DEFAULT_LEVEL
+    barrel_factor = settings.barrel_speed_px_per_second / level.barrel_speed
+    fire_factor = settings.fire_speed_px_per_second / level.fire_speed
+    level = replace(level, barrel_interval=settings.barrel_interval_seconds,
+                    barrel_speed=settings.barrel_speed_px_per_second,
+                    barrel_speed_limit=settings.barrel_speed_cap_px_per_second,
+                    fire_interval=settings.fire_spawn_interval_seconds,
+                    fire_speed=settings.fire_speed_px_per_second,
+                    barrels=tuple(replace(barrel, speed=barrel.speed * barrel_factor)
+                                  for barrel in level.barrels),
+                    fire_enemies=tuple(replace(enemy, speed=enemy.speed * fire_factor)
+                                       for enemy in level.fire_enemies))
+    return platform_game.Game(level, goal_progress_percent=settings.goal_progress_percent)
 
 
 def _game_input(name: str, keys):
@@ -277,7 +304,7 @@ def _game_input(name: str, keys):
 
 def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
                remaining: float, warning: bool, test_mode: bool,
-               timer_visible: bool, free_mode: bool) -> None:
+               timer_visible: bool, free_mode: bool, games: GameSettings = GameSettings()) -> None:
     draw = {"maze": maze_window._draw, "space_combat": space_window._draw,
             "platformer": platform_window._draw}[name]
     if name == "maze":
@@ -309,6 +336,12 @@ def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
         "space_combat": ("OBJECTIF : ATTEINDRE LE SCORE CIBLE", "FLECHES / A D : BOUGER   •   ESPACE : TIRER"),
         "platformer": ("OBJECTIF : REJOINDRE LA PRINCESSE", "FLECHES / WASD : BOUGER / GRIMPER   •   ESPACE : SAUTER"),
     }[name]
+    if name == "maze" and games.maze.pellet_goal_percent < 100:
+        instructions = (f"OBJECTIF : RAMASSER {games.maze.pellet_goal_percent:g}% DES PASTILLES",
+                        instructions[1])
+    elif name == "platformer" and games.platformer.goal_progress_percent < 100:
+        instructions = (f"OBJECTIF : ATTEINDRE {games.platformer.goal_progress_percent:g}% DU SOMMET",
+                        instructions[1])
     _label(surface, _font(17, True), instructions[0], (42, 690), WHITE)
     _label(surface, _font(15), instructions[1], (42, 722), GREEN)
     if test_mode:
@@ -416,12 +449,14 @@ def run() -> None:
     parser = argparse.ArgumentParser(description="Laboratoire 1986")
     parser.add_argument("--config", type=Path, default=Path(__file__).resolve().parents[1] / "config.json")
     parser.add_argument("--test-mode", action="store_true", help="Accélère les délais à 10 %% sans modifier le fichier de configuration")
+    parser.add_argument("--fullscreen", action="store_true", help="Affiche le parcours intégré en plein écran")
     args = parser.parse_args()
     pygame.mixer.pre_init(frequency=44100, size=-16, channels=1)
     pygame.init()
     try:
         config = load_config(args.config)
-        screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        flags = pygame.SCALED | pygame.FULLSCREEN if args.fullscreen else 0
+        screen = pygame.display.set_mode((WIDTH, HEIGHT), flags)
         pygame.display.set_caption("Laboratoire 1986 | Terminal de surveillance")
         clock = pygame.time.Clock()
         scale = 0.1 if args.test_mode else 1.0
@@ -520,7 +555,7 @@ def run() -> None:
                 game_name = None
             if state.phase is Phase.JEU:
                 if game is None or game_name != state.active_game:
-                    game = _new_game(state.active_game)
+                    game = _new_game(state.active_game, config.games)
                     game_name = state.active_game
                     game_time = 0.0
                 else:
@@ -535,11 +570,11 @@ def run() -> None:
                 _draw_elf(screen, elapsed, state.messages)
             elif state.phase in (Phase.CHOIX, Phase.LIBRE):
                 _draw_choice(screen, state.available_games, state.remaining_seconds,
-                             warning_active, args.test_mode, state.free_mode)
+                             warning_active, args.test_mode, state.free_mode, config.games)
             elif state.phase in (Phase.JEU, Phase.RESULTAT):
                 _draw_game(screen, state.active_game, game.state, game_time,
                            state.remaining_seconds, warning_active, args.test_mode,
-                           state.timer_visible, state.free_mode)
+                           state.timer_visible, state.free_mode, config.games)
             elif state.phase is Phase.VICTOIRE:
                 _draw_victory(screen, config.room_digit, args.test_mode)
             elif state.phase is Phase.FIN:

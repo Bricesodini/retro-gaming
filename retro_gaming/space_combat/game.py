@@ -69,9 +69,17 @@ def _formation() -> tuple[Enemy, ...]:
 class Game:
     """A round lasts three lives or until the configured score is reached."""
 
-    def __init__(self, score_target: int = DEFAULT_SCORE_TARGET):
+    def __init__(self, score_target: int = DEFAULT_SCORE_TARGET,
+                 enemy_speed_px_per_second: float = 80,
+                 salvo_interval_seconds: float = 1.3):
         if isinstance(score_target, bool) or not isinstance(score_target, int) or score_target <= 0:
             raise ValueError("Score target must be a positive integer.")
+        for name, value in (("Enemy speed", enemy_speed_px_per_second),
+                            ("Salvo interval", salvo_interval_seconds)):
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be positive and finite.")
+        self._enemy_speed_px_per_second = enemy_speed_px_per_second
+        self._salvo_interval_seconds = salvo_interval_seconds
         self.state = GameState(
             960, 640, 480.0, 570.0, 24.0, _formation(), (), Result.PLAYING,
             shelters=tuple(ShelterBlock(center + (col - 3) * 12, 475 + row * 12)
@@ -128,7 +136,7 @@ class Game:
             self._shot_cooldown = 0.25
 
         enemies = list(state.enemies)
-        delta_x = self._enemy_direction * (80 + (state.wave - 1) * 12) * seconds
+        delta_x = self._enemy_direction * (self._enemy_speed_px_per_second + (state.wave - 1) * 12) * seconds
         left = min(e.x for e in enemies) + delta_x - ENEMY_HALF_WIDTH
         right = max(e.x for e in enemies) + delta_x + ENEMY_HALF_WIDTH
         descent = 0
@@ -140,7 +148,7 @@ class Game:
 
         enemy_shots = list(state.enemy_shots)
         self._salvo_elapsed += seconds
-        if self._salvo_elapsed + 1e-10 >= max(0.7, 1.3 - (state.wave - 1) * 0.08):
+        if self._salvo_elapsed + 1e-10 >= max(0.7, self._salvo_interval_seconds - (state.wave - 1) * 0.08):
             self._salvo_elapsed = 0
             # Only the lowest invader in a column fires; three columns per salvo.
             columns = sorted({round(e.x, 4) for e in enemies})

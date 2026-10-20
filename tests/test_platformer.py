@@ -18,6 +18,13 @@ def small_level(*, barrels=()):
 
 
 class PlatformerTests(unittest.TestCase):
+    def test_numeric_progress_goal_can_end_at_a_lower_reached_height(self):
+        game = Game(small_level(), goal_progress_percent=50)
+        state = game.advance(1.29, PlayerInput(right=True))
+        self.assertEqual(state.result, Result.PLAYING)
+        state = game.advance(0.5, PlayerInput(up=True))
+        self.assertEqual(state.result, Result.VICTORY)
+
     def test_walk_jump_and_platform_landing_follow_elapsed_time(self):
         game = Game(small_level())
         self.assertAlmostEqual(game.advance(0.2, PlayerInput(right=True)).player_x, 114, delta=1)

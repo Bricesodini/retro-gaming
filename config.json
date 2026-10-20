@@ -3,6 +3,26 @@
   "possession_seconds": 12,
   "warning_seconds": 60,
   "room_digit": 4,
+  "games": {
+    "maze": {
+      "pellet_goal_percent": 100,
+      "ghost_step_seconds": 0.45,
+      "power_seconds": 6
+    },
+    "space_combat": {
+      "score_target": 3000,
+      "enemy_speed_px_per_second": 80,
+      "salvo_interval_seconds": 1.3
+    },
+    "platformer": {
+      "goal_progress_percent": 100,
+      "barrel_interval_seconds": 4,
+      "barrel_speed_px_per_second": 85,
+      "barrel_speed_cap_px_per_second": 125,
+      "fire_spawn_interval_seconds": 14,
+      "fire_speed_px_per_second": 26
+    }
+  },
   "variant": "Mystère",
   "trigger": {
     "key": "space",

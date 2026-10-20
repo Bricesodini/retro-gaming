@@ -1,4 +1,6 @@
-# Validation des trois jeux d’arcade — 19 octobre 2026
+# Validation de la borne rétro gaming
+
+Les sections datées du 19 octobre ci-dessous conservent l'historique des essais des jeux autonomes. La section du 20 octobre distingue le parcours intégré du ticket #14, les preuves disponibles et les essais restant à réaliser sur la borne.
 
 Ce compte rendu concerne l’[issue #10](https://github.com/Bricesodini/retro-gaming/issues/10). Les trois jeux restent des lanceurs autonomes (`python -m retro_gaming.maze`, `python -m retro_gaming.space_combat`, `python -m retro_gaming.platformer`) ; le POC de possession, sa session et sa configuration ne changent pas. Chaque moteur expose `Game.advance(temps, entrées) -> GameState`, ce qui permet de vérifier ses règles sans fenêtre.
 
@@ -54,3 +56,46 @@ Retour utilisateur : trop de barriques en arrivant en haut. La montée en cadenc
 Après le retour « trop dur encore », le réglage par défaut passe à **4 secondes entre les lancers**, avec un minimum de **3,2 secondes au sommet**. Les barriques partent à **85 px/s** et sont plafonnées à **125 px/s**, contre 170 auparavant. Une seule barrique est présente au départ, contre deux. Les deux flammes initiales passent à 28 et 24 px/s ; le brasier génère une flamme après 14 secondes au lieu de 7, avec trois flammes mobiles au maximum au lieu de quatre. Le parcours, les pentes et la terrasse restent identiques.
 
 Les **58 tests passent**. Le scénario de saut utilise désormais la vitesse observable de la barrique pour attendre son approche avant de sauter : une barrique plus lente exige d’attendre davantage, plutôt que de conserver une distance de déclenchement fixe. Ces vérifications établissent les règles ; l’utilisateur doit encore confirmer son ressenti avec ce nouveau réglage.
+
+## Parcours intégré et préparation de la borne — 20 octobre 2026, ticket #14
+
+### Vérifications exécutées dans le worktree du ticket
+
+Machine d'exécution : macOS 27.0.1 sur architecture `arm64`. Environnement créé depuis la racine du dépôt avec les commandes suivantes :
+
+```sh
+uv python install 3.11.11
+uv venv --python 3.11.11 --seed .venv
+.venv/bin/python -m pip install --requirement requirements.txt
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m compileall -q retro_gaming tests
+```
+
+L'installation a donné CPython 3.11.11 et pygame-ce 2.5.8. La suite `unittest` s'est terminée avec **78 tests réussis**, sans erreur. Elle vérifie notamment les deux variantes, le déclenchement unique, le seuil d'avertissement et l'alarme uniques, le choix des trois jeux, leurs trois vies, les victoires, les trois échecs distincts, la révélation du chiffre configuré, le mode libre, la priorité de l'échéance, les réglages numériques de jeu et plusieurs remises à zéro suivies d'un second cycle. Ces preuves sont des tests contrôlés du modèle ; elles ne démontrent pas un parcours effectivement joué au clavier dans la fenêtre.
+
+Un essai court de `retro_gaming.app.run()` avec `--fullscreen --test-mode`, `SDL_VIDEODRIVER=cocoa` et sortie audio SDL simulée s'est terminé normalement après **70 images**. Le canevas logique mesurait **1 200 × 760** et la fenêtre plein écran **2 056 × 1 290** sur l'écran disponible. Des événements Pygame **injectés par logiciel** ont déclenché successivement laboratoire, possession et Elf, puis Échap a quitté l'application. Cet essai vérifie l'ouverture du plein écran Cocoa, l'échelle logique et le traitement de ces événements synthétiques ; il ne prouve ni la pression d'un clavier physique, ni la lisibilité à distance, ni la qualité de la sortie audio réelle.
+
+Les essais Cocoa antérieurs consignés plus haut et dans le README précédent avaient employé **System Events ou des entrées injectées par logiciel**. Ils indiquent que Pygame a reçu des événements, que les fenêtres et certains sprites ont été rendus et que le mélangeur s'est initialisé. Ils ne constituent pas une pression physique du clavier, une écoute acoustique indépendante, ni une partie complète de chacun des trois jeux dans le parcours intégré. Les captures temporaires mentionnées plus haut peuvent ne plus être présentes sur une autre machine.
+
+### Procédure manuelle à effectuer sur le Mac Apple Silicon de la salle
+
+1. Suivre l'[installation du README](../README.md), choisir la sortie audio réellement utilisée et vérifier que la fenêtre de 1 200 × 760 pixels est entièrement visible. Lancer aussi `--fullscreen` et vérifier l'échelle, les éventuelles bandes, la lisibilité et la sortie avec Échap. Dupliquer `config.json` pour les essais. Noter modèle du Mac, version de macOS, écran, clavier, sortie et volume audio, variante et fichier de configuration.
+2. Lancer `.venv/bin/python -m retro_gaming --config /chemin/vers/copie.json`. Observer l'accueil sans chronomètre. **Appuyer physiquement** sur le déclencheur configuré ; noter tout conflit éventuel avec macOS. Vérifier la progression de la possession, le message de l'entité puis celui d'Elf, la lisibilité et le son. Refaire avec `Mystère` puis `Tension` en gardant le même volume.
+3. Appuyer sur **Entrée**, puis **1**, **2** ou **3**. Vérifier les contrôles du [README](../README.md), l'affichage des trois vies, des scores et des objectifs. Jouer réellement chaque jeu avec le clavier physique : au labyrinthe, inspecter personnage, fantômes, super-pastilles et collisions ; au combat, vaisseau, abris, projectiles des deux camps, collisions et étoiles en mouvement ; aux plateformes, personnages, barriques, flammes, échelles, sauts et collisions. Essayer aussi chaque lanceur autonome et le fermer par **Échap**.
+4. Jouer une issue gagnante pour **chacun des trois jeux**, avec remise à zéro entre les cycles. Vérifier que le chiffre de salle apparaît, que les trois jeux sont accessibles en mode libre, que le chronomètre n'est plus affiché et que l'échéance interrompt le jeu libre avec l'invitation d'Elf à rejoindre la salle suivante.
+5. Perdre les trois vies d'un jeu ; constater le retour de l'entité puis d'Elf et l'exclusion de ce jeu au choix suivant. Perdre les trois jeux différents ; vérifier l'écran d'échec sans chiffre ni quatrième jeu, son maintien jusqu'à l'échéance et le signal final.
+6. Essayer la remise à zéro depuis le laboratoire, la possession, le choix, chacun des jeux, un résultat, la victoire, le mode libre, l'échec et la fin. Confirmer l'arrêt des sons et le retour de l'accueil. Refaire ensuite un parcours complet : aucun chiffre, jeu tenté, vie, message, avertissement ou résultat de l'équipe précédente ne doit subsister.
+7. Lancer `--test-mode` avec une copie de configuration adaptée : vérifier le badge, les trois durées réduites à 10 % et l'absence de modification du fichier normal. Régler la durée de la copie assez haut pour pouvoir terminer une partie ; le mode test n'accélère pas les jeux.
+
+Pour chaque jeu, consigner **durée réelle, vies restantes, causes des collisions, score ou progression atteinte, lisibilité des sprites et projectiles, et éventuelle gêne sonore ou visuelle**. Ne régler le score cible ni les cadences qu'après ces essais dans la salle avec le public prévu. Aucun réglage de difficulté n'est déduit d'une simulation.
+
+### État des critères du ticket #14
+
+| Critère | État vérifiable au 20 octobre 2026 |
+| --- | --- |
+| Durées, seuil, variante, déclencheur, chiffre de salle extérieurs au code | Présents dans `config.json` et vérifiés en partie par `tests/test_config.py`. |
+| Objectifs et difficultés des trois jeux extérieurs au code | Section optionnelle `games` intégrée, documentée dans le README. Les tests contrôlent le chargement et des effets de paramètres au point d'entrée public des jeux. La calibration des valeurs sur la borne reste à faire. |
+| Configuration invalide expliquée avant affichage | Contrôles présents pour les champs connus, y compris les nombres de jeu, noms de jeu et de réglage inconnus ; tests de variante, chiffre, conflit avec la remise à zéro et valeurs de jeu invalides. Essai visuel du message d'erreur encore à faire. |
+| Mode test et remise à zéro sans état résiduel | Comportements couverts par le code et les tests de `Session` ; essai physique des raccourcis et des sons encore à faire. |
+| Parcours complet, audio, affichage, plein écran et second cycle sur la borne | **En attente d'un essai manuel complet** sur le Mac et avec le clavier, l'écran et la sortie audio réellement prévus. |
+| Trois jeux autonomes au clavier physique ; calibration du score et des cadences | **En attente de parties physiques complètes en salle**. Les anciens essais injectés et les tests de moteur ne prouvent pas ce critère. |
