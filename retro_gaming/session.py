@@ -35,6 +35,7 @@ class SessionState:
 
 
 GAMES = ("maze", "space_combat", "platformer")
+ARRIVAL_DELAY_SECONDS = 10
 
 
 def _chosen_game(action: str | None) -> str | None:
@@ -57,6 +58,8 @@ class Session:
             raise ValueError("L'avertissement doit être avant la fin et à l'intérieur de la session.")
         if not math.isfinite(signal_seconds) or signal_seconds < 0:
             raise ValueError("Le délai d'arrivée doit être positif ou nul et fini.")
+        if signal_seconds + possession_seconds >= session_seconds:
+            raise ValueError("La session doit dépasser le délai d'arrivée et la durée de possession réunis.")
         if type(room_digit) is not int or not 0 <= room_digit <= 9:
             raise ValueError("Le chiffre de salle doit être un entier de 0 à 9.")
         self.session_seconds = session_seconds

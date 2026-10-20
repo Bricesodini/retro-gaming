@@ -9,7 +9,7 @@ from pathlib import Path
 import pygame
 
 from retro_gaming.config import GameSettings, MODIFIERS, RESET_KEY, RESET_MODIFIERS, load_config
-from retro_gaming.session import Phase, Session
+from retro_gaming.session import ARRIVAL_DELAY_SECONDS, Phase, Session
 from retro_gaming.maze import game as maze_game, window as maze_window
 from retro_gaming.space_combat import game as space_game, window as space_window
 from retro_gaming.platformer import game as platform_game, window as platform_window
@@ -594,7 +594,7 @@ def run() -> None:
         scale = 0.1 if args.test_mode else 1.0
         session = Session(config.session_seconds * scale, config.possession_seconds * scale,
                           config.warning_seconds * scale, config.room_digit,
-                          signal_seconds=10 * scale)
+                          signal_seconds=ARRIVAL_DELAY_SECONDS * scale)
         started_at = pygame.time.get_ticks()
         previous_tick = started_at
         previous_phase = Phase.LABORATOIRE

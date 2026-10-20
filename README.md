@@ -84,7 +84,7 @@ Le fichier livré contient les durées et le chiffre ci-dessous ainsi qu'un obje
 }
 ```
 
-`warning_seconds` est le nombre de secondes **restant** lorsque l'avertissement est émis, et non une durée depuis le déclenchement. Les trois durées doivent être positives et finies ; possession et avertissement doivent être inférieurs à `session_seconds`. `room_digit` est un entier de 0 à 9. `variant` vaut exactement `Mystère` ou `Tension` ; les messages et le parcours restent les mêmes, tandis que Tension renforce progressivement la silhouette, les interférences et le grondement. Le délai avant l'arrivée est fixe : dix secondes. Les touches de modification seules, Échap et le raccourci de remise à zéro ne déclenchent pas la session. Le champ `trigger` des anciennes configurations doit être supprimé.
+`warning_seconds` est le nombre de secondes **restant** lorsque l'avertissement est émis, et non une durée depuis le déclenchement. Les trois durées doivent être positives et finies ; la session doit être plus longue que les dix secondes d'attente et la durée de possession réunies, et l'avertissement doit rester inférieur à `session_seconds`. `room_digit` est un entier de 0 à 9. `variant` vaut exactement `Mystère` ou `Tension` ; les messages et le parcours restent les mêmes, tandis que Tension renforce progressivement la silhouette, les interférences et le grondement. Le délai avant l'arrivée est fixe : dix secondes. Les touches de modification seules, Échap et le raccourci de remise à zéro ne déclenchent pas la session. Le champ `trigger` des anciennes configurations doit être supprimé.
 
 | Jeu | Réglage numérique | Sens et valeur livrée |
 | --- | --- | --- |

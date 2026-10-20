@@ -62,6 +62,15 @@ class TriggerConfigurationTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "chiffre de salle"):
                     load_config(path)
 
+    def test_session_must_fit_arrival_delay_and_possession(self):
+        data = {"session_seconds": 20, "possession_seconds": 12,
+                "warning_seconds": 5, "variant": "Mystère"}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "délai d'arrivée de 10 secondes"):
+                load_config(path)
+
     def test_configured_variants_follow_the_same_session_journey(self):
         common = {
             "session_seconds": 30,
