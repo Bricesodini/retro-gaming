@@ -14,6 +14,8 @@ class Phase(Enum):
     RESULTAT = "resultat"
     FIN = "fin"
     ECHEC = "echec"
+    VICTOIRE = "victoire"
+    LIBRE = "libre"
 
 
 @dataclass(frozen=True)
@@ -26,6 +28,8 @@ class SessionState:
     active_game: str | None = None
     game_result: str | None = None
     timer_visible: bool = False
+    room_result: str | None = None
+    free_mode: bool = False
 
 
 GAMES = ("maze", "space_combat", "platformer")
@@ -33,7 +37,7 @@ GAMES = ("maze", "space_combat", "platformer")
 
 class Session:
     def __init__(self, session_seconds: float = 300, possession_seconds: float = 12,
-                 warning_seconds: float = 60):
+                 warning_seconds: float = 60, room_digit: int = 4):
         if any(not math.isfinite(value) or value <= 0 for value in
                (session_seconds, possession_seconds, warning_seconds)):
             raise ValueError("Les durées de session, de possession et d'avertissement doivent être positives et finies.")
@@ -41,9 +45,12 @@ class Session:
             raise ValueError("La possession doit être plus courte que la session.")
         if warning_seconds >= session_seconds:
             raise ValueError("L'avertissement doit être avant la fin et à l'intérieur de la session.")
+        if type(room_digit) is not int or not 0 <= room_digit <= 9:
+            raise ValueError("Le chiffre de salle doit être un entier de 0 à 9.")
         self.session_seconds = session_seconds
         self.possession_seconds = possession_seconds
         self.warning_seconds = warning_seconds
+        self.room_digit = room_digit
         self._active_seconds: float | None = None
         self._warning_sent = False
         self._alarm_sent = False
@@ -54,6 +61,8 @@ class Session:
         self._takeover_started: float | None = None
         self._returning_elf = False
         self._failed = False
+        self._won = False
+        self._free_open = False
 
     def advance(self, elapsed_seconds: float, animator_action: str | None,
                 game_result: str | None = None) -> SessionState:
@@ -71,6 +80,8 @@ class Session:
             self._takeover_started = None
             self._returning_elf = False
             self._failed = False
+            self._won = False
+            self._free_open = False
             return SessionState(Phase.LABORATOIRE, None, ())
         if self._active_seconds is None:
             if animator_action != "declencher_mystere":
@@ -91,7 +102,9 @@ class Session:
         if remaining == 0:
             self._active_game = None
             self._game_result = None
-            return SessionState(Phase.FIN, 0, tuple(events))
+            return SessionState(Phase.FIN, 0, tuple(events),
+                                ("ELF // Le temps est écoulé. Rejoignez la salle suivante.",),
+                                room_result="victory" if self._won else "defeat" if self._failed else None)
         if elapsed < self.possession_seconds:
             messages = ()
             if elapsed >= self.possession_seconds * 0.35:
@@ -100,7 +113,7 @@ class Session:
                 messages += ("ELF // Je vous entends. Restez ensemble.",)
             return SessionState(Phase.POSSESSION, remaining, tuple(events), messages,
                                 timer_visible=True)
-        if self._game_result == "defeat":
+        if self._game_result == "defeat" and not self._won:
             self._lost_games.append(self._active_game)
             self._active_game = None
             self._game_result = None
@@ -119,16 +132,48 @@ class Session:
         if self._failed:
             return SessionState(Phase.ECHEC, remaining, tuple(events),
                                 ("ELF // Je suis revenue.", "DEFI ECHOUE"),
-                                timer_visible=True)
+                                timer_visible=True, room_result="defeat")
+        if self._won and not self._free_open:
+            if self._game_result == "victory":
+                self._active_game = None
+                self._game_result = None
+                animator_action = None
+            if animator_action == "continuer":
+                self._free_open = True
+            else:
+                return SessionState(Phase.VICTOIRE, remaining, tuple(events), (
+                    "ELF // La salle est libérée. L'entité reviendra.",
+                    f"CHIFFRE DE SALLE : {self.room_digit}",
+                    "Les trois jeux sont maintenant libres. Appuyez sur ENTREE.",
+                ), room_result="victory")
         if self._active_game is not None:
+            if self._won and self._game_result is not None:
+                self._active_game = None
+                self._game_result = None
+                return SessionState(Phase.LIBRE, remaining, tuple(events),
+                                    ("ELF // Profitez des jeux avant le départ.",), GAMES,
+                                    room_result="victory", free_mode=True)
             if self._game_result is None and game_result in ("victory", "defeat"):
                 self._game_result = game_result
+                if game_result == "victory" and not self._free_open:
+                    self._won = True
             phase = Phase.RESULTAT if self._game_result else Phase.JEU
             messages = (("PARTIE GAGNEE" if self._game_result == "victory" else "PARTIE PERDUE",)
                         if self._game_result else ())
             return SessionState(phase, remaining, tuple(events), messages,
                                 active_game=self._active_game, game_result=self._game_result,
-                                timer_visible=True)
+                                timer_visible=not self._won and self._game_result != "victory",
+                                room_result="victory" if self._won or self._game_result == "victory" else None,
+                                free_mode=self._free_open)
+        if self._free_open:
+            game = animator_action.removeprefix("choisir_") if animator_action else None
+            if animator_action and animator_action.startswith("choisir_") and game in GAMES:
+                self._active_game = game
+                return SessionState(Phase.JEU, remaining, tuple(events), active_game=game,
+                                    room_result="victory", free_mode=True)
+            return SessionState(Phase.LIBRE, remaining, tuple(events),
+                                ("ELF // Profitez des jeux avant le départ.",), GAMES,
+                                room_result="victory", free_mode=True)
         if self._choice_open:
             game = animator_action.removeprefix("choisir_") if animator_action else None
             if game in GAMES and game not in self._lost_games and animator_action.startswith("choisir_"):

@@ -233,13 +233,17 @@ GAME_LABELS = {
 
 
 def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
-                 remaining: float, warning: bool, test_mode: bool) -> None:
+                 remaining: float, warning: bool, test_mode: bool,
+                 free_mode: bool = False) -> None:
     _draw_welcome(surface, 0, active=True)
     panel = pygame.Rect(40, 244, 1120, 386)
     _panel(surface, panel)
-    title = "ELF // NOUVELLE CHANCE" if len(available_games) < 3 else "ELF // J'AI BESOIN DE VOUS"
+    title = ("ELF // MODE LIBRE" if free_mode else
+             "ELF // NOUVELLE CHANCE" if len(available_games) < 3 else "ELF // J'AI BESOIN DE VOUS")
     _label(surface, _font(25, True), title, (68, 267), WHITE)
-    _label(surface, _font(17), "Choisissez un jeu. Trois vies pour relever le defi.", (68, 307), GREEN)
+    subtitle = ("Les trois jeux sont accessibles jusqu'au depart." if free_mode else
+                "Choisissez un jeu. Trois vies pour relever le defi.")
+    _label(surface, _font(17), subtitle, (68, 307), GREEN)
     for index, game_name in enumerate(available_games):
         key, name, instruction = GAME_LABELS[game_name]
         y = 359 + index * 82
@@ -247,7 +251,10 @@ def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
         _label(surface, _font(27, True), key, (69, y), AMBER)
         _label(surface, _font(23, True), name, (126, y), WHITE)
         _label(surface, _font(16), instruction, (128, y + 36), GREEN_DIM)
-    _draw_session_status(surface, remaining, warning, test_mode)
+    if not free_mode:
+        _draw_session_status(surface, remaining, warning, test_mode)
+    elif test_mode:
+        _draw_test_mode_badge(surface)
 
 
 def _new_game(name: str):
@@ -269,7 +276,8 @@ def _game_input(name: str, keys):
 
 
 def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
-               remaining: float, warning: bool, test_mode: bool) -> None:
+               remaining: float, warning: bool, test_mode: bool,
+               timer_visible: bool, free_mode: bool) -> None:
     draw = {"maze": maze_window._draw, "space_combat": space_window._draw,
             "platformer": platform_window._draw}[name]
     if name == "maze":
@@ -287,12 +295,15 @@ def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
     image = pygame.transform.smoothscale(canvas, size)
     surface.fill(BACKGROUND)
     _draw_grid(surface)
-    _label(surface, _font(17, True), "LABORATOIRE 1986  /  DEFI EN COURS", (42, 30), GREEN)
+    _label(surface, _font(17, True),
+           "LABORATOIRE 1986  /  MODE LIBRE" if free_mode else
+           "LABORATOIRE 1986  /  DEFI EN COURS", (42, 30), GREEN)
     _label(surface, _font(20, True), f"VIES {state.lives} / 3", (633, 27), WHITE)
     surface.blit(image, ((WIDTH - size[0]) // 2, 102 + (580 - size[1]) // 2))
-    minutes, seconds = divmod(math.ceil(remaining), 60)
-    _label(surface, _font(24, True), f"TEMPS {minutes:02}:{seconds:02}", (956, 24),
-           AMBER if warning else GREEN)
+    if timer_visible:
+        minutes, seconds = divmod(math.ceil(remaining), 60)
+        _label(surface, _font(24, True), f"TEMPS {minutes:02}:{seconds:02}", (956, 24),
+               AMBER if warning else GREEN)
     instructions = {
         "maze": ("OBJECTIF : VIDER LE PLATEAU", "FLECHES / WASD : SE DEPLACER"),
         "space_combat": ("OBJECTIF : ATTEINDRE LE SCORE CIBLE", "FLECHES / A D : BOUGER   •   ESPACE : TIRER"),
@@ -359,11 +370,25 @@ def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -
     surface.fill(BACKGROUND)
     _draw_grid(surface)
     _label(surface, _font(44, bold=True), "SESSION TERMINEE", (350, 223), AMBER)
-    _label(surface, _font(24), "Le temps est ecoule. Merci a cette equipe.", (326, 310), WHITE)
+    _label(surface, _font(24), "ELF // Le temps est ecoule. Rejoignez la salle suivante.", (205, 310), WHITE)
     _label(surface, _font(21), "Animateur : remettre le laboratoire a zero pour l'equipe suivante.", (171, 391), GREEN)
     _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + BACKSPACE", (419, 474), GREEN_DIM)
     if combined_alerts:
         _label(surface, _font(17, bold=True), "AVERTISSEMENT DE FIN EMIS", (445, 550), AMBER)
+    if test_mode:
+        _draw_test_mode_badge(surface)
+
+
+def _draw_victory(surface: pygame.Surface, messages: tuple[str, ...],
+                  test_mode: bool) -> None:
+    surface.fill(BACKGROUND)
+    _draw_grid(surface)
+    _label(surface, _font(24, True), "ELF // CONTROLE RETABLI", (381, 165), GREEN)
+    _label(surface, _font(44, True), "DEFI REUSSI", (405, 225), WHITE)
+    _label(surface, _font(38, True), messages[1], (352, 310), AMBER)
+    _label(surface, _font(21), "L'entite annonce son retour. Pour l'instant, jouez librement.",
+           (239, 400), GREEN)
+    _label(surface, _font(18), "ENTREE POUR ACCEDER AUX TROIS JEUX", (391, 490), WHITE)
     if test_mode:
         _draw_test_mode_badge(surface)
 
@@ -402,7 +427,7 @@ def run() -> None:
         clock = pygame.time.Clock()
         scale = 0.1 if args.test_mode else 1.0
         session = Session(config.session_seconds * scale, config.possession_seconds * scale,
-                          config.warning_seconds * scale)
+                          config.warning_seconds * scale, config.room_digit)
         started_at = pygame.time.get_ticks()
         previous_tick = started_at
         previous_phase = Phase.LABORATOIRE
@@ -436,9 +461,9 @@ def run() -> None:
                 elif config.matches(event) and action != "reinitialiser":
                     action = "declencher_mystere"
                 elif event.type == pygame.KEYDOWN and action != "reinitialiser":
-                    if previous_state.phase is Phase.ELF and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    if previous_state.phase in (Phase.ELF, Phase.VICTOIRE) and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                         action = "continuer"
-                    elif previous_state.phase is Phase.CHOIX:
+                    elif previous_state.phase in (Phase.CHOIX, Phase.LIBRE):
                         selected = {pygame.K_1: "maze", pygame.K_KP1: "maze",
                                     pygame.K_2: "space_combat", pygame.K_KP2: "space_combat",
                                     pygame.K_3: "platformer", pygame.K_KP3: "platformer"}.get(event.key)
@@ -451,6 +476,7 @@ def run() -> None:
             delta = (now - previous_tick) / 1000
             previous_tick = now
             reported_result = (game.state.result.value if game is not None and
+                               previous_state.phase in (Phase.JEU, Phase.RESULTAT) and
                                game.state.result.value != "playing" else None)
             state = session.advance(delta, action, reported_result)
             if action == "reinitialiser":
@@ -490,6 +516,9 @@ def run() -> None:
                     contact_sound.play()
             previous_phase = state.phase
             previous_state = state
+            if state.phase in (Phase.CHOIX, Phase.LIBRE, Phase.VICTOIRE, Phase.FIN):
+                game = None
+                game_name = None
             if state.phase is Phase.JEU:
                 if game is None or game_name != state.active_game:
                     game = _new_game(state.active_game)
@@ -505,12 +534,15 @@ def run() -> None:
                                  session.possession_seconds, state.messages, config.variant)
             elif state.phase is Phase.ELF:
                 _draw_elf(screen, elapsed, state.messages)
-            elif state.phase is Phase.CHOIX:
+            elif state.phase in (Phase.CHOIX, Phase.LIBRE):
                 _draw_choice(screen, state.available_games, state.remaining_seconds,
-                             warning_active, args.test_mode)
+                             warning_active, args.test_mode, state.free_mode)
             elif state.phase in (Phase.JEU, Phase.RESULTAT):
                 _draw_game(screen, state.active_game, game.state, game_time,
-                           state.remaining_seconds, warning_active, args.test_mode)
+                           state.remaining_seconds, warning_active, args.test_mode,
+                           state.timer_visible, state.free_mode)
+            elif state.phase is Phase.VICTOIRE:
+                _draw_victory(screen, state.messages, args.test_mode)
             elif state.phase is Phase.FIN:
                 _draw_end(screen, args.test_mode, combined_alerts)
             elif state.phase is Phase.ECHEC:

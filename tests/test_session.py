@@ -67,7 +67,7 @@ class SessionEndJourneyTest(unittest.TestCase):
         end = session.advance(11, None)
         self.assertEqual((end.phase, end.remaining_seconds), (Phase.FIN, 0))
         self.assertEqual(end.events, ("avertissement", "alarme"))
-        self.assertEqual(end.messages, ())
+        self.assertIn("salle suivante", " ".join(end.messages))
 
     def test_expiration_during_elf_intervention(self):
         session = Session(session_seconds=10, possession_seconds=2, warning_seconds=3)
@@ -100,6 +100,81 @@ if __name__ == "__main__":
     unittest.main()
 
 class ArcadeJourneyTest(unittest.TestCase):
+    def test_free_games_can_be_replayed_and_deadline_stops_play(self):
+        session = Session(20, 2, 5, room_digit=3)
+        session.advance(0, "declencher_mystere")
+        session.advance(2, None)
+        session.advance(0, "continuer")
+        session.advance(0, "choisir_maze")
+        session.advance(1, None, "victory")
+        session.advance(0, None)
+        session.advance(0, "continuer")
+        first = session.advance(0, "choisir_maze")
+        self.assertEqual((first.active_game, first.free_mode, first.timer_visible),
+                         ("maze", True, False))
+        result = session.advance(1, None, "defeat")
+        self.assertEqual((result.phase, result.free_mode), (Phase.RESULTAT, True))
+        choices = session.advance(0, None)
+        self.assertEqual((choices.phase, choices.available_games),
+                         (Phase.LIBRE, ("maze", "space_combat", "platformer")))
+        second = session.advance(0, "choisir_platformer")
+        self.assertEqual(second.active_game, "platformer")
+        warning = session.advance(11, None)
+        self.assertEqual((warning.remaining_seconds, warning.events), (5, ("avertissement",)))
+        end = session.advance(5, "choisir_space_combat", "victory")
+        self.assertEqual((end.phase, end.events, end.active_game), (Phase.FIN, ("alarme",), None))
+        self.assertIn("salle suivante", " ".join(end.messages))
+        self.assertEqual(session.advance(1, "choisir_maze", "victory").events, ())
+
+    def test_reset_from_free_mode_clears_room_result_and_starts_new_session(self):
+        session = Session(20, 2, 5, room_digit=9)
+        session.advance(0, "declencher_mystere")
+        session.advance(2, None)
+        session.advance(0, "continuer")
+        session.advance(0, "choisir_maze")
+        session.advance(0, None, "victory")
+        session.advance(0, None)
+        session.advance(0, "continuer")
+        reset = session.advance(4, "reinitialiser")
+        self.assertEqual(reset, SessionState(Phase.LABORATOIRE, None, ()))
+        started = session.advance(0, "declencher_mystere")
+        self.assertEqual((started.remaining_seconds, started.room_result,
+                          started.free_mode, started.events), (20, None, False, ()))
+
+    def test_victory_remains_the_room_result_if_time_expires_before_elf_screen(self):
+        session = Session(10, 2, 3, room_digit=5)
+        session.advance(0, "declencher_mystere")
+        session.advance(2, None)
+        session.advance(0, "continuer")
+        session.advance(0, "choisir_maze")
+        won = session.advance(7, None, "victory")
+        self.assertEqual((won.phase, won.room_result, won.timer_visible),
+                         (Phase.RESULTAT, "victory", False))
+        ended = session.advance(1, None)
+        self.assertEqual((ended.phase, ended.room_result, ended.events),
+                         (Phase.FIN, "victory", ("alarme",)))
+
+    def test_each_game_victory_reveals_configured_digit_then_opens_all_free_games(self):
+        for game in ("maze", "space_combat", "platformer"):
+            with self.subTest(game=game):
+                session = Session(60, 2, 10, room_digit=7)
+                session.advance(0, "declencher_mystere")
+                session.advance(2, None)
+                session.advance(0, "continuer")
+                session.advance(0, f"choisir_{game}")
+                result = session.advance(3, None, "victory")
+                won = session.advance(0, None)
+                self.assertEqual(result.phase, Phase.RESULTAT)
+                self.assertEqual(won.phase, Phase.VICTOIRE)
+                self.assertEqual(won.room_result, "victory")
+                self.assertIn("7", " ".join(won.messages))
+                self.assertFalse(won.timer_visible)
+                free = session.advance(0, "continuer")
+                self.assertEqual(free.phase, Phase.LIBRE)
+                self.assertEqual(free.available_games, ("maze", "space_combat", "platformer"))
+                self.assertTrue(free.free_mode)
+                self.assertFalse(free.timer_visible)
+
     def test_deadline_overrides_final_entity_takeover(self):
         session = Session(session_seconds=10, possession_seconds=2, warning_seconds=0.5)
         session.advance(0, "declencher_mystere")
@@ -183,6 +258,9 @@ class ArcadeJourneyTest(unittest.TestCase):
         expired = session.advance(failure.remaining_seconds, None)
         self.assertEqual((expired.phase, expired.remaining_seconds), (Phase.FIN, 0))
         self.assertEqual(expired.events, ("avertissement", "alarme"))
+        self.assertEqual(expired.room_result, "defeat")
+        self.assertIn("salle suivante", " ".join(expired.messages))
+        self.assertEqual(session.advance(0, "choisir_maze", "victory").phase, Phase.FIN)
 
     def test_defeat_brings_entity_then_elf_and_only_untried_choices(self):
         session = Session(session_seconds=90, possession_seconds=4, warning_seconds=10)

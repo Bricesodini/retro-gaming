@@ -10,6 +10,21 @@ from retro_gaming.session import Phase, Session
 
 
 class TriggerConfigurationTest(unittest.TestCase):
+    def test_room_digit_loads_and_rejects_invalid_values(self):
+        data = {"session_seconds": 30, "possession_seconds": 2,
+                "warning_seconds": 5, "variant": "Mystère",
+                "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "meta"]},
+                "room_digit": 8}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            self.assertEqual(load_config(path).room_digit, 8)
+            for invalid in (-1, 10, 1.5, True, "7"):
+                data["room_digit"] = invalid
+                path.write_text(json.dumps(data), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "chiffre de salle"):
+                    load_config(path)
+
     def test_configured_variants_follow_the_same_session_journey(self):
         common = {
             "session_seconds": 30,

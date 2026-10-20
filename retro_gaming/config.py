@@ -28,6 +28,7 @@ class Config:
     trigger_key: int
     trigger_modifiers: tuple[str, ...]
     variant: str
+    room_digit: int = 4
 
     def matches(self, event: pygame.event.Event) -> bool:
         return (
@@ -49,6 +50,9 @@ def load_config(path: Path) -> Config:
         possession_seconds = float(data["possession_seconds"])
         warning_seconds = float(data["warning_seconds"])
         variant = data["variant"]
+        room_digit = data.get("room_digit", 4)
+        if type(room_digit) is not int or not 0 <= room_digit <= 9:
+            raise ValueError("le chiffre de salle doit être un entier de 0 à 9")
         if variant not in ("Mystère", "Tension"):
             raise ValueError("variant inconnue : choisir Mystère ou Tension")
         trigger = data["trigger"]
@@ -67,6 +71,7 @@ def load_config(path: Path) -> Config:
             raise ValueError("la possession doit être plus courte que la session")
         if warning_seconds >= session_seconds:
             raise ValueError("l’avertissement doit être à l’intérieur de la session")
-        return Config(session_seconds, possession_seconds, warning_seconds, key, modifiers, variant)
+        return Config(session_seconds, possession_seconds, warning_seconds, key, modifiers,
+                      variant, room_digit)
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
         raise ValueError(f"Configuration invalide dans {path} : {error}") from error
