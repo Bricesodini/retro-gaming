@@ -113,10 +113,12 @@ class Session:
                                     ("ENTITE // Ce terminal est à moi.",),
                                     timer_visible=True)
             self._takeover_started = None
+            if len(self._lost_games) == len(GAMES):
+                self._failed = True
             animator_action = None
         if self._failed:
             return SessionState(Phase.ECHEC, remaining, tuple(events),
-                                ("DEFI ECHOUE", "Elf n'a pas pu reprendre le laboratoire."),
+                                ("ELF // Je suis revenue.", "DEFI ECHOUE"),
                                 timer_visible=True)
         if self._active_game is not None:
             if self._game_result is None and game_result in ("victory", "defeat"):
@@ -138,23 +140,12 @@ class Session:
                                 tuple(game for game in GAMES if game not in self._lost_games),
                                 timer_visible=True)
         if animator_action == "continuer":
-            if self._returning_elf and len(self._lost_games) == len(GAMES):
-                self._failed = True
-                return SessionState(Phase.ECHEC, remaining, tuple(events),
-                                    ("DEFI ECHOUE", "Elf n'a pas pu reprendre le laboratoire."),
-                                    timer_visible=True)
             self._choice_open = True
             return SessionState(Phase.CHOIX, remaining, tuple(events),
                                 ("ELF // Choisissez un jeu pour m'aider.",),
                                 tuple(game for game in GAMES if game not in self._lost_games),
                                 timer_visible=True)
         if self._returning_elf:
-            if len(self._lost_games) == len(GAMES):
-                return SessionState(Phase.ELF, remaining, tuple(events), (
-                    "ELF // Je suis revenue.",
-                    "Nous avons échoué à repousser l'entité.",
-                    "Appuyez sur ENTREE pour terminer.",
-                ), timer_visible=True)
             return SessionState(Phase.ELF, remaining, tuple(events), (
                 "ELF // Je suis revenue.",
                 "Vous avez une nouvelle chance.",

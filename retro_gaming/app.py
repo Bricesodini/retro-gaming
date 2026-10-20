@@ -372,6 +372,7 @@ def _draw_failure(surface: pygame.Surface, remaining: float, warning: bool,
                   test_mode: bool) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
+    _label(surface, _font(23, bold=True), "ELF // JE SUIS REVENUE", (421, 171), GREEN)
     _label(surface, _font(44, bold=True), "DEFI ECHOUE", (395, 223), RED)
     _label(surface, _font(24), "Les trois jeux sont perdus. Elf ne peut plus agir.", (262, 310), WHITE)
     _label(surface, _font(21), "Animateur : remettre le laboratoire a zero pour l'equipe suivante.",

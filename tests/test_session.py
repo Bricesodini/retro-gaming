@@ -100,6 +100,24 @@ if __name__ == "__main__":
     unittest.main()
 
 class ArcadeJourneyTest(unittest.TestCase):
+    def test_deadline_overrides_final_entity_takeover(self):
+        session = Session(session_seconds=10, possession_seconds=2, warning_seconds=0.5)
+        session.advance(0, "declencher_mystere")
+        session.advance(2, None)
+        session.advance(0, "continuer")
+        for game in ("maze", "space_combat", "platformer"):
+            session.advance(0, f"choisir_{game}")
+            session.advance(1, None, game_result="defeat")
+            takeover = session.advance(0, None)
+            self.assertEqual(takeover.phase, Phase.POSSESSION)
+            if game != "platformer":
+                self.assertEqual(session.advance(2, None).phase, Phase.ELF)
+                session.advance(0, "continuer")
+
+        ended = session.advance(1, None)
+        self.assertEqual((ended.phase, ended.remaining_seconds), (Phase.FIN, 0))
+        self.assertEqual(ended.events, ("avertissement", "alarme"))
+
     def test_elf_return_cannot_be_skipped_by_continue_at_takeover_boundary(self):
         session = Session(session_seconds=20, possession_seconds=2, warning_seconds=5)
         session.advance(0, "declencher_mystere")
@@ -147,19 +165,24 @@ class ArcadeJourneyTest(unittest.TestCase):
             entity = session.advance(0, None)
             self.assertEqual(entity.phase, Phase.POSSESSION)
             self.assertIn("ENTITE", " ".join(entity.messages))
-            elf = session.advance(2, None)
-            self.assertEqual(elf.phase, Phase.ELF)
+            after_takeover = session.advance(2, None)
             if game != "platformer":
-                self.assertIn("nouvelle chance", " ".join(elf.messages).lower())
+                self.assertEqual(after_takeover.phase, Phase.ELF)
+                self.assertIn("nouvelle chance", " ".join(after_takeover.messages).lower())
                 session.advance(0, "continuer")
 
-        self.assertIn("échoué", " ".join(elf.messages).lower())
-        failure = session.advance(0, "continuer")
+        failure = after_takeover
         self.assertEqual(failure.phase, Phase.ECHEC)
+        self.assertIn("ELF", " ".join(failure.messages))
+        self.assertIn("ECHOU", " ".join(failure.messages))
         self.assertEqual(failure.available_games, ())
         self.assertIsNone(failure.active_game)
         self.assertNotIn("chiffre", " ".join(failure.messages).lower())
         self.assertEqual(session.advance(0, "choisir_maze"), failure)
+        self.assertEqual(session.advance(0, "continuer"), failure)
+        expired = session.advance(failure.remaining_seconds, None)
+        self.assertEqual((expired.phase, expired.remaining_seconds), (Phase.FIN, 0))
+        self.assertEqual(expired.events, ("avertissement", "alarme"))
 
     def test_defeat_brings_entity_then_elf_and_only_untried_choices(self):
         session = Session(session_seconds=90, possession_seconds=4, warning_seconds=10)
