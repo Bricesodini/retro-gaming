@@ -17,6 +17,8 @@ uv venv --python 3.11.11 --seed .venv
 
 Pour afficher ce même canevas logique en plein écran, lancer `.venv/bin/python -m retro_gaming --fullscreen`. Pygame le met à l'échelle de l'écran ; **Échap** quitte aussi ce mode. L'option concerne le parcours intégré et peut être combinée avec `--config` et `--test-mode`. Le démarrage reste en fenêtre par défaut.
 
+Pour démarrer la borne directement en plein écran depuis le Finder, double-cliquer sur **Lancer le laboratoire.command** à la racine du projet. Le lanceur utilise l'environnement `.venv` et transmet les éventuelles options supplémentaires au jeu.
+
 ## Déroulement et commandes
 
 | Phase | Action et affichage |
