@@ -39,7 +39,7 @@ class AppTextLayoutTests(unittest.TestCase):
     def test_game_countdown_is_large_and_red(self):
         surface = pygame.Surface((1200, 760))
         with patch("retro_gaming.app._label") as label:
-            _draw_game(surface, "space_combat", Game().state, 0, False, False)
+            _draw_game(surface, "space_combat", Game().state, 0, False)
             _draw_countdown(surface, 42, False)
 
         countdown = next(call for call in label.call_args_list

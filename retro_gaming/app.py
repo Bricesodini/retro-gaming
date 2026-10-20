@@ -383,7 +383,7 @@ GAME_LABELS = {
 
 
 def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
-                 remaining: float, warning: bool, test_mode: bool,
+                 remaining: float, warning: bool,
                  free_mode: bool = False, games: GameSettings = GameSettings(),
                  portrait: pygame.Surface | None = None) -> None:
     _draw_welcome(surface, 0, active=True)
@@ -410,8 +410,6 @@ def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
         _label(surface, _font(16), instruction, (128, y + 36), GREEN_DIM)
     if portrait:
         _draw_elf_portrait(surface, portrait, (866, 349), (240, 200))
-    if free_mode and test_mode:
-        _draw_test_mode_badge(surface)
 
 
 def _new_game(name: str, games: GameSettings):
@@ -447,7 +445,6 @@ def _game_input(name: str, keys):
 
 
 def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
-               test_mode: bool,
                free_mode: bool, games: GameSettings = GameSettings()) -> None:
     draw = {"maze": maze_window._draw, "space_combat": space_window._draw,
             "platformer": platform_window._draw}[name]
@@ -484,8 +481,6 @@ def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
                         instructions[1])
     _label(surface, _font(17, True), instructions[0], (42, 690), WHITE)
     _label(surface, _font(15), instructions[1], (42, 722), GREEN)
-    if test_mode:
-        _draw_test_mode_badge(surface)
 
 
 def _tone(frequency: float, seconds: float, volume: float = 0.13) -> pygame.mixer.Sound:
@@ -514,7 +509,7 @@ def _draw_countdown(surface: pygame.Surface, remaining: float, warning: bool) ->
     _label(surface, _font(48, bold=True), f"{minutes:02}:{seconds:02}", (955, 20), timer_color)
 
 
-def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool,
+def _draw_end(surface: pygame.Surface, combined_alerts: bool,
               portrait: pygame.Surface) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
@@ -526,11 +521,9 @@ def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool,
     if combined_alerts:
         _label(surface, _font(17, bold=True), "AVERTISSEMENT DE FIN EMIS", (445, 550), AMBER)
     _draw_elf_portrait(surface, portrait, (865, 335), (250, 208))
-    if test_mode:
-        _draw_test_mode_badge(surface)
 
 
-def _draw_victory(surface: pygame.Surface, room_digit: int, test_mode: bool,
+def _draw_victory(surface: pygame.Surface, room_digit: int,
                   portrait: pygame.Surface) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
@@ -541,11 +534,9 @@ def _draw_victory(surface: pygame.Surface, room_digit: int, test_mode: bool,
                        _font(21), (239, 400), GREEN, 590, 28)
     _label(surface, _font(18), "ENTREE POUR ACCEDER AUX TROIS JEUX", (391, 490), WHITE)
     _draw_elf_portrait(surface, portrait, (858, 341), (260, 217))
-    if test_mode:
-        _draw_test_mode_badge(surface)
 
 
-def _draw_failure(surface: pygame.Surface, test_mode: bool, portrait: pygame.Surface) -> None:
+def _draw_failure(surface: pygame.Surface, portrait: pygame.Surface) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
     _label(surface, _font(23, bold=True), "ELF // JE SUIS REVENUE", (421, 171), GREEN)
@@ -715,22 +706,22 @@ def run() -> None:
                 _draw_elf(screen, elapsed, state.messages, portrait)
             elif state.phase in (Phase.CHOIX, Phase.LIBRE):
                 _draw_choice(screen, state.available_games, state.remaining_seconds,
-                             warning_active, args.test_mode, state.free_mode, config.games,
+                             warning_active, state.free_mode, config.games,
                              portrait)
             elif state.phase in (Phase.JEU, Phase.RESULTAT):
                 _draw_game(screen, state.active_game, game.state, game_time,
-                           args.test_mode, state.free_mode, config.games)
+                           state.free_mode, config.games)
             elif state.phase is Phase.VICTOIRE:
-                _draw_victory(screen, config.room_digit, args.test_mode, portrait)
+                _draw_victory(screen, config.room_digit, portrait)
             elif state.phase is Phase.FIN:
-                _draw_end(screen, args.test_mode, combined_alerts, portrait)
+                _draw_end(screen, combined_alerts, portrait)
             elif state.phase is Phase.ECHEC:
-                _draw_failure(screen, args.test_mode, portrait)
+                _draw_failure(screen, portrait)
             else:
                 raise AssertionError(f"Phase sans écran : {state.phase}")
             if state.timer_visible and state.remaining_seconds is not None:
                 _draw_countdown(screen, state.remaining_seconds, warning_active)
-            elif state.phase is Phase.LABORATOIRE and args.test_mode:
+            if args.test_mode:
                 _draw_test_mode_badge(screen)
             pygame.display.flip()
             clock.tick(FPS)
