@@ -24,10 +24,10 @@ Action volontaire de l’animateur qui lance la possession ; son support matéri
 _Éviter_ : déclenchement automatique, lorsque l’on désigne cette action volontaire.
 
 **Défi** :
-Épreuve sur un seul jeu choisi parmi les trois jeux de la borne ; sa réussite révèle le chiffre secret.
+Épreuve de salle où l’équipe choisit parmi les trois jeux jusqu’à gagner une partie ou perdre trois jeux. Une victoire révèle le chiffre de salle.
 
 **Tentative** :
-Essai du défi par un joueur ; un changement de joueur est autorisé entre les tentatives, sur le même jeu.
+Partie d’un jeu choisi pendant le défi, avec trois vies. Si les trois vies sont perdues, ce jeu ne peut plus être choisi pendant ce défi.
 
 **Mode libre** :
 Récompense après la réussite du défi, donnant accès aux trois jeux jusqu’à la fin du temps global.
