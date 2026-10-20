@@ -18,7 +18,7 @@
 - Premier test sans voix : texte lisible, consignes conservées à l’écran et bips originaux. La nécessité d’une voix sera évaluée après ce test, notamment pour les plus jeunes ; le choix d’une voix robotique concernait l’ancien personnage et n’est pas retenu pour Elf à ce stade.
 - Deux variantes de possession, environ 12 secondes chacune, durée configurable : « Mystère » (diagnostics anormaux, parasites légers, racines, intervention de Elf) et « Tension » (mêmes informations, déformations plus marquées, portrait du Démogorgon, grondement plus présent). L'arrivée comporte un seul flash rouge bref, demandé ultérieurement ; aucun flash n'est répété et aucun sursaut brutal n'est ajouté.
 - Après l’alarme finale, remise à zéro réservée à l’animateur : effacement du chiffre affiché, des tentatives et du chronomètre, puis rétablissement du laboratoire de 1986 pour la prochaine équipe.
-- Après la victoire, Elf reprend le contrôle, révèle le chiffre et déverrouille les trois jeux. Le chronomètre reste visible jusqu'à l'entrée en mode libre, puis disparaît sans arrêter le temps. Quelques traces de possession restent visibles dans une ambiance devenue rassurante.
+- Après la victoire, Elf reprend le contrôle et révèle le chiffre sans afficher le chronomètre. À l'entrée en mode libre, le temps restant réapparaît en vert et continue de s'écouler pendant les jeux. Quelques traces de possession restent visibles dans une ambiance devenue rassurante.
 - L’entité disparaît mais annonce qu’elle reviendra : la victoire dans cette salle est provisoire et prépare un nouveau combat plus tard dans le parcours.
 
 ## Contexte du parcours

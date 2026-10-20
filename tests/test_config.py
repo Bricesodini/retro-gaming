@@ -118,7 +118,7 @@ class TriggerConfigurationTest(unittest.TestCase):
                           (), (), (), (), (), (), ("avertissement",),
                           ("alarme",), ()])
         self.assertIn("ELF", " ".join(journeys[0][2].messages))
-        self.assertIn("Un défi", " ".join(journeys[0][3].messages))
+        self.assertIn("compte à rebours", " ".join(journeys[0][3].messages))
         self.assertEqual(journeys[0][3].messages, journeys[0][4].messages)
         self.assertEqual(journeys[0][7].messages, ())
         self.assertEqual(journeys[0][9].messages, ())

@@ -21,13 +21,13 @@ Pour afficher ce même canevas logique en plein écran, lancer `.venv/bin/python
 
 | Phase | Action et affichage |
 | --- | --- |
-| Laboratoire | Diagnostics autonomes. Le chronomètre est inactif jusqu'à la première touche ordinaire ; elle lance la session et affiche un signal inconnu pendant dix secondes. Le Démogorgon arrive ensuite. |
-| Possession et Elf | Le Démogorgon s'adresse à l'équipe, puis Elf demande son aide. Le temps global court dès la première touche, y compris pendant les dix secondes d'attente. Appuyer sur **Entrée** quand Elf le propose. |
+| Laboratoire | Diagnostics autonomes. Le chronomètre est inactif jusqu'à la première touche ordinaire ; elle lance la session et affiche un compte à rebours vert pendant les dix secondes avant l'arrivée du Démogorgon. |
+| Possession et Elf | À l'arrivée du Démogorgon, le compte à rebours devient rouge. Elf explique qu'il indique le temps restant pour repousser l'entité. Appuyer sur **Entrée** quand Elf le propose. |
 | Choix | Appuyer sur **1** (Pac-Man), **2** (Space Invaders) ou **3** (Donkey Kong). Les consignes restent affichées. |
 | Partie | Chaque jeu offre trois vies. Le temps global continue pendant la partie. Une victoire remporte immédiatement le défi de salle. |
 | Défaite d'un jeu | Le Démogorgon reprend le contrôle, Elf revient, puis **Entrée** ouvre le choix parmi les jeux encore disponibles. Un jeu perdu ne peut plus être choisi dans ce défi. |
 | Troisième défaite | Après la reprise du Démogorgon et le retour d'Elf, l'écran d'échec reste affiché jusqu'à la fin du temps. Aucun chiffre ni quatrième jeu. |
-| Victoire de salle | Elf révèle le chiffre configuré. Appuyer sur **Entrée** pour ouvrir le mode libre ; les trois jeux sont alors disponibles, y compris ceux déjà tentés. Le chronomètre est masqué mais continue. |
+| Victoire de salle | Après le résultat gagnant, le chronomètre disparaît pendant la révélation du chiffre. Appuyer sur **Entrée** pour ouvrir le mode libre ; les trois jeux sont alors disponibles, y compris ceux déjà tentés, avec un compte à rebours vert qui continue. |
 | Fin du temps | Avertissement au seuil configuré, puis signal de fin et message d'Elf pour rejoindre la salle suivante. La partie ou la scène en cours s'arrête. |
 
 Après les dix secondes d'attente, le Démogorgon apparaît avec son portrait pixelisé, un unique flash rouge bref, une déchirure du signal, des parasites CRT et un grondement bas. Chaque jeu a sa propre musique chiptune originale d'environ **15 secondes**, avec plusieurs phrases avant la reprise et un niveau de lecture réduit. Quand une tentative est perdue, la reprise du signal devient une confrontation animée entre Elf et le Démogorgon ; elle dure environ **2,4 secondes** avec la configuration par défaut, puis Elf revient proposer un jeu encore disponible.

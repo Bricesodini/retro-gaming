@@ -499,12 +499,17 @@ def _draw_test_mode_badge(surface: pygame.Surface) -> None:
     _label(surface, _font(15, bold=True), "MODE TEST", (1045, 721), AMBER)
 
 
-def _draw_countdown(surface: pygame.Surface, remaining: float, warning: bool) -> None:
+def _draw_countdown(surface: pygame.Surface, remaining: float, warning: bool,
+                    entity_arrived: bool, free_mode: bool = False) -> None:
     timer_box = pygame.Rect(792, 7, 367, 86)
-    timer_color = (255, 56, 65) if warning else (255, 109, 80)
-    pygame.draw.rect(surface, (38, 10, 17), timer_box, border_radius=5)
+    green_mode = free_mode or not entity_arrived
+    timer_color = ((91, 232, 153) if green_mode else
+                   (255, 56, 65) if warning else (255, 80, 80))
+    background = (6, 29, 20) if green_mode else (38, 10, 17)
+    label_color = (166, 255, 199) if green_mode else (255, 175, 168)
+    pygame.draw.rect(surface, background, timer_box, border_radius=5)
     pygame.draw.rect(surface, timer_color, timer_box, 2, border_radius=5)
-    _label(surface, _font(14, True), "TEMPS RESTANT", (811, 41), (255, 175, 168))
+    _label(surface, _font(14, True), "TEMPS RESTANT", (811, 41), label_color)
     minutes, seconds = divmod(math.ceil(remaining), 60)
     _label(surface, _font(48, bold=True), f"{minutes:02}:{seconds:02}", (955, 20), timer_color)
 
@@ -720,7 +725,8 @@ def run() -> None:
             else:
                 raise AssertionError(f"Phase sans écran : {state.phase}")
             if state.timer_visible and state.remaining_seconds is not None:
-                _draw_countdown(screen, state.remaining_seconds, warning_active)
+                _draw_countdown(screen, state.remaining_seconds, warning_active,
+                                state.phase is not Phase.LABORATOIRE, state.free_mode)
             if args.test_mode:
                 _draw_test_mode_badge(screen)
             pygame.display.flip()

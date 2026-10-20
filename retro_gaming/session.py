@@ -172,13 +172,14 @@ class Session:
                     "ELF // La salle est libérée. Le Démogorgon reviendra.",
                     f"CHIFFRE DE SALLE : {self.room_digit}",
                     "Les trois jeux sont maintenant libres. Appuyez sur ENTREE.",
-                ), timer_visible=True, room_result="victory")
+                ), timer_visible=False, room_result="victory")
         if self._active_game is not None:
             if self._won and self._game_result is not None:
                 self._active_game = None
                 self._game_result = None
                 return SessionState(Phase.LIBRE, remaining, tuple(events),
                                     ("ELF // Profitez des jeux avant le départ.",), GAMES,
+                                    timer_visible=True,
                                     room_result="victory", free_mode=True)
             if self._game_result is None and game_result in ("victory", "defeat"):
                 self._game_result = game_result
@@ -189,7 +190,7 @@ class Session:
                         if self._game_result else ())
             return SessionState(phase, remaining, tuple(events), messages,
                                 active_game=self._active_game, game_result=self._game_result,
-                                timer_visible=not self._free_open,
+                                timer_visible=(self._free_open or self._game_result != "victory"),
                                 room_result="victory" if self._won or self._game_result == "victory" else None,
                                 free_mode=self._free_open)
         if self._free_open:
@@ -197,9 +198,10 @@ class Session:
             if game is not None:
                 self._active_game = game
                 return SessionState(Phase.JEU, remaining, tuple(events), active_game=game,
-                                    room_result="victory", free_mode=True)
+                                    timer_visible=True, room_result="victory", free_mode=True)
             return SessionState(Phase.LIBRE, remaining, tuple(events),
                                 ("ELF // Profitez des jeux avant le départ.",), GAMES,
+                                timer_visible=True,
                                 room_result="victory", free_mode=True)
         if self._choice_open:
             game = _chosen_game(animator_action)
@@ -225,8 +227,7 @@ class Session:
             ), timer_visible=True)
         return SessionState(Phase.ELF, remaining, tuple(events), (
             "ELF // C'est moi, Elf. Je retiens cette présence.",
-            "Le Démogorgon a pris le contrôle du laboratoire.",
-            "Un défi vous attend dans ce laboratoire.",
-            "J'ai besoin de votre aide pour la repousser.",
+            "Le Démogorgon a pris le contrôle du terminal.",
+            "Le compte à rebours rouge indique le temps qu'il vous reste pour la repousser.",
             "Appuyez sur ENTREE pour choisir un jeu.",
         ), timer_visible=True)
