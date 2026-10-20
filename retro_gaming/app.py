@@ -3,7 +3,6 @@
 import argparse
 import math
 from array import array
-from dataclasses import replace
 from functools import lru_cache
 from pathlib import Path
 
@@ -274,18 +273,12 @@ def _new_game(name: str, games: GameSettings):
                                enemy_speed_px_per_second=games.space_combat.enemy_speed_px_per_second,
                                salvo_interval_seconds=games.space_combat.salvo_interval_seconds)
     settings = games.platformer
-    level = platform_game.DEFAULT_LEVEL
-    barrel_factor = settings.barrel_speed_px_per_second / level.barrel_speed
-    fire_factor = settings.fire_speed_px_per_second / level.fire_speed
-    level = replace(level, barrel_interval=settings.barrel_interval_seconds,
-                    barrel_speed=settings.barrel_speed_px_per_second,
-                    barrel_speed_limit=settings.barrel_speed_cap_px_per_second,
-                    fire_interval=settings.fire_spawn_interval_seconds,
-                    fire_speed=settings.fire_speed_px_per_second,
-                    barrels=tuple(replace(barrel, speed=barrel.speed * barrel_factor)
-                                  for barrel in level.barrels),
-                    fire_enemies=tuple(replace(enemy, speed=enemy.speed * fire_factor)
-                                       for enemy in level.fire_enemies))
+    level = platform_game.DEFAULT_LEVEL.with_tuning(
+        barrel_interval_seconds=settings.barrel_interval_seconds,
+        barrel_speed_px_per_second=settings.barrel_speed_px_per_second,
+        barrel_speed_cap_px_per_second=settings.barrel_speed_cap_px_per_second,
+        fire_spawn_interval_seconds=settings.fire_spawn_interval_seconds,
+        fire_speed_px_per_second=settings.fire_speed_px_per_second)
     return platform_game.Game(level, goal_progress_percent=settings.goal_progress_percent)
 
 
@@ -559,8 +552,9 @@ def run() -> None:
                     game_name = state.active_game
                     game_time = 0.0
                 else:
-                    game.advance(delta, _game_input(state.active_game, pygame.key.get_pressed()))
-                    game_time += delta
+                    game_delta = delta / scale
+                    game.advance(game_delta, _game_input(state.active_game, pygame.key.get_pressed()))
+                    game_time += game_delta
             if state.phase is Phase.LABORATOIRE:
                 _draw_welcome(screen, elapsed)
             elif state.phase is Phase.POSSESSION:

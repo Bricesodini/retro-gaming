@@ -18,6 +18,18 @@ def small_level(*, barrels=()):
 
 
 class PlatformerTests(unittest.TestCase):
+    def test_level_tuning_updates_existing_and_future_hazards(self):
+        tuned = DEFAULT_LEVEL.with_tuning(
+            barrel_interval_seconds=5, barrel_speed_px_per_second=70,
+            barrel_speed_cap_px_per_second=100, fire_spawn_interval_seconds=20,
+            fire_speed_px_per_second=39)
+        state = Game(tuned).state
+        self.assertEqual(state.level.barrel_interval, 5)
+        self.assertEqual(state.level.barrels[0].speed, 70)
+        self.assertEqual(state.level.fire_enemies[0].speed, 42)
+        self.assertEqual(state.level.fire_speed, 39)
+        self.assertEqual(DEFAULT_LEVEL.barrels[0].speed, 85)
+
     def test_numeric_progress_goal_can_end_at_a_lower_reached_height(self):
         game = Game(small_level(), goal_progress_percent=50)
         state = game.advance(1.29, PlayerInput(right=True))

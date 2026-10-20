@@ -90,6 +90,26 @@ class Level:
     def walkable_platforms(self) -> tuple[Platform, ...]:
         return self.platforms + ((self.rescue_platform,) if self.rescue_platform is not None else ())
 
+    def with_tuning(self, *, barrel_interval_seconds: float,
+                    barrel_speed_px_per_second: float,
+                    barrel_speed_cap_px_per_second: float,
+                    fire_spawn_interval_seconds: float,
+                    fire_speed_px_per_second: float) -> "Level":
+        """Apply session tuning to new hazards and those already on the level."""
+        barrel_factor = barrel_speed_px_per_second / self.barrel_speed
+        fire_factor = fire_speed_px_per_second / self.fire_speed
+        return replace(
+            self, barrel_interval=barrel_interval_seconds,
+            barrel_speed=barrel_speed_px_per_second,
+            barrel_speed_limit=barrel_speed_cap_px_per_second,
+            fire_interval=fire_spawn_interval_seconds,
+            fire_speed=fire_speed_px_per_second,
+            barrels=tuple(replace(barrel, speed=barrel.speed * barrel_factor)
+                          for barrel in self.barrels),
+            fire_enemies=tuple(replace(enemy, speed=enemy.speed * fire_factor)
+                              for enemy in self.fire_enemies),
+        )
+
 
 # Six alternating ramps keep the ape on the upper left while every climb
 # approaches the next ladder uphill, against the descending barrels.
