@@ -35,6 +35,13 @@ class SessionState:
 GAMES = ("maze", "space_combat", "platformer")
 
 
+def _chosen_game(action: str | None) -> str | None:
+    if action is None or not action.startswith("choisir_"):
+        return None
+    game = action.removeprefix("choisir_")
+    return game if game in GAMES else None
+
+
 class Session:
     def __init__(self, session_seconds: float = 300, possession_seconds: float = 12,
                  warning_seconds: float = 60, room_digit: int = 4):
@@ -166,8 +173,8 @@ class Session:
                                 room_result="victory" if self._won or self._game_result == "victory" else None,
                                 free_mode=self._free_open)
         if self._free_open:
-            game = animator_action.removeprefix("choisir_") if animator_action else None
-            if animator_action and animator_action.startswith("choisir_") and game in GAMES:
+            game = _chosen_game(animator_action)
+            if game is not None:
                 self._active_game = game
                 return SessionState(Phase.JEU, remaining, tuple(events), active_game=game,
                                     room_result="victory", free_mode=True)
@@ -175,8 +182,8 @@ class Session:
                                 ("ELF // Profitez des jeux avant le départ.",), GAMES,
                                 room_result="victory", free_mode=True)
         if self._choice_open:
-            game = animator_action.removeprefix("choisir_") if animator_action else None
-            if game in GAMES and game not in self._lost_games and animator_action.startswith("choisir_"):
+            game = _chosen_game(animator_action)
+            if game is not None and game not in self._lost_games:
                 self._active_game = game
                 return SessionState(Phase.JEU, remaining, tuple(events), active_game=game,
                                     timer_visible=True)
