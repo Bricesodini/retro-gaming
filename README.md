@@ -1,6 +1,6 @@
 # Laboratoire 1986 — borne rétro gaming
 
-Application Pygame CE pour **macOS Apple Silicon**. Le laboratoire accueille l'équipe, l'animateur déclenche la possession, Elf propose trois jeux, puis la session conduit à une victoire de salle ou à un échec. Le chiffre de salle est révélé uniquement après une victoire. Les dessins et sons sont générés par le code ; aucun média de la série ni ROM n'est requis.
+Application Pygame CE pour **macOS Apple Silicon**. Le laboratoire accueille l'équipe ; sa première touche lance une attente de dix secondes avant la possession, Elf propose trois hommages d'arcade des années 80 — **Pac-Man**, **Space Invaders** et **Donkey Kong** — puis la session conduit à une victoire de salle ou à un échec. Le chiffre de salle est révélé uniquement après une victoire. Les ambiances sonores et musiques sont originales et synthétisées par le code ; les portraits pixel art d'Elf et du Démogorgon sont livrés dans les ressources du jeu. Aucune ROM n'est requise.
 
 ## Installer et lancer
 
@@ -21,24 +21,26 @@ Pour afficher ce même canevas logique en plein écran, lancer `.venv/bin/python
 
 | Phase | Action et affichage |
 | --- | --- |
-| Laboratoire | Diagnostics autonomes. Le chronomètre est inactif. L'animateur appuie sur **Contrôle + Option + Commande + Espace** pour déclencher la possession. |
-| Possession et Elf | L'entité s'adresse à l'équipe, puis Elf demande son aide. Le temps global court dès le déclenchement. Appuyer sur **Entrée** quand Elf le propose. |
-| Choix | Appuyer sur **1** (labyrinthe), **2** (combat spatial) ou **3** (plateformes). Les consignes restent affichées. |
+| Laboratoire | Diagnostics autonomes. Le chronomètre est inactif jusqu'à la première touche ordinaire ; elle lance la session et affiche un signal inconnu pendant dix secondes. Le Démogorgon arrive ensuite. |
+| Possession et Elf | Le Démogorgon s'adresse à l'équipe, puis Elf demande son aide. Le temps global court dès la première touche, y compris pendant les dix secondes d'attente. Appuyer sur **Entrée** quand Elf le propose. |
+| Choix | Appuyer sur **1** (Pac-Man), **2** (Space Invaders) ou **3** (Donkey Kong). Les consignes restent affichées. |
 | Partie | Chaque jeu offre trois vies. Le temps global continue pendant la partie. Une victoire remporte immédiatement le défi de salle. |
-| Défaite d'un jeu | L'entité reprend le contrôle, Elf revient, puis **Entrée** ouvre le choix parmi les jeux encore disponibles. Un jeu perdu ne peut plus être choisi dans ce défi. |
-| Troisième défaite | Après la reprise de l'entité et le retour d'Elf, l'écran d'échec reste affiché jusqu'à la fin du temps. Aucun chiffre ni quatrième jeu. |
+| Défaite d'un jeu | Le Démogorgon reprend le contrôle, Elf revient, puis **Entrée** ouvre le choix parmi les jeux encore disponibles. Un jeu perdu ne peut plus être choisi dans ce défi. |
+| Troisième défaite | Après la reprise du Démogorgon et le retour d'Elf, l'écran d'échec reste affiché jusqu'à la fin du temps. Aucun chiffre ni quatrième jeu. |
 | Victoire de salle | Elf révèle le chiffre configuré. Appuyer sur **Entrée** pour ouvrir le mode libre ; les trois jeux sont alors disponibles, y compris ceux déjà tentés. Le chronomètre est masqué mais continue. |
 | Fin du temps | Avertissement au seuil configuré, puis signal de fin et message d'Elf pour rejoindre la salle suivante. La partie ou la scène en cours s'arrête. |
 
-Depuis **toute phase**, **Contrôle + Option + Commande + Retour arrière** (`Backspace`) remet la borne à zéro pour une nouvelle équipe. Ce raccourci est distinct du déclencheur : il arrête les sons, efface le temps, les vies, les jeux tentés, le résultat, le chiffre affiché et les alertes, puis rétablit le laboratoire. Après la remise à zéro, utiliser à nouveau le déclencheur pour commencer le second parcours.
+Après les dix secondes d'attente, le Démogorgon apparaît avec son portrait pixelisé, un unique flash rouge bref, une déchirure du signal, des parasites CRT et un grondement bas. Chaque jeu a sa propre musique chiptune originale d'environ **15 secondes**, avec plusieurs phrases avant la reprise et un niveau de lecture réduit. Quand une tentative est perdue, la reprise du signal devient une confrontation animée entre Elf et le Démogorgon ; elle dure environ **2,4 secondes** avec la configuration par défaut, puis Elf revient proposer un jeu encore disponible.
+
+Depuis **toute phase**, y compris le laboratoire en attente, **Contrôle + Option + Commande + Espace** remet la borne à zéro pour une nouvelle équipe. Ce raccourci a priorité sur le déclenchement : il arrête les sons, efface le temps, les vies, les jeux tentés, le résultat, le chiffre affiché et les alertes, puis rétablit le laboratoire. Après la remise à zéro, la prochaine touche ordinaire commence un nouveau parcours.
 
 ### Contrôles des jeux
 
 | Jeu | Objectif et commandes |
 | --- | --- |
-| Labyrinthe | Ramasser la proportion configurée des pastilles (100 % par défaut : vider le plateau). **Flèches** ou **WASD** pour se déplacer. Les super-pastilles rendent temporairement les quatre fantômes vulnérables. |
-| Combat spatial | Atteindre le score cible configuré (3 000 points par défaut) en détruisant les envahisseurs. **Gauche/Droite** ou **A/D** pour se déplacer ; maintenir **Espace** pour tirer. Les abris protègent puis se dégradent. |
-| Plateformes | Atteindre la progression verticale configurée (100 % par défaut : rejoindre la princesse sur la terrasse), en évitant barriques, ennemis de feu et brasier. **Gauche/Droite** ou **A/D** pour marcher, **Haut/Bas** ou **W/S** pour les échelles, **Espace** pour sauter. |
+| Pac-Man | Ramasser la proportion configurée des pastilles (100 % par défaut : vider le plateau). **Flèches** ou **WASD** pour se déplacer. Les super-pastilles rendent temporairement les quatre fantômes vulnérables. |
+| Space Invaders | Atteindre le score cible configuré (3 000 points par défaut) en détruisant les envahisseurs. **Gauche/Droite** ou **A/D** pour se déplacer ; maintenir **Espace** pour tirer. La formation rebondit sans descendre; les abris protègent puis se dégradent. |
+| Donkey Kong | Atteindre la progression verticale configurée (100 % par défaut : rejoindre la princesse sur la terrasse), en évitant barriques, ennemis de feu et brasier. **Gauche/Droite** ou **A/D** pour marcher, **Haut/Bas** ou **W/S** pour les échelles, **Espace** pour sauter. |
 
 Un seul joueur contrôle le jeu à la fois. Un changement de joueur peut se faire entre les vies sans quitter le jeu choisi. Les lanceurs autonomes restent disponibles :
 
@@ -67,7 +69,6 @@ Le fichier livré contient les durées et le chiffre ci-dessous ainsi qu'un obje
   "warning_seconds": 60,
   "room_digit": 4,
   "variant": "Mystère",
-  "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "meta"]},
   "games": {
     "maze": {"pellet_goal_percent": 100, "ghost_step_seconds": 0.45, "power_seconds": 6},
     "space_combat": {"score_target": 3000, "enemy_speed_px_per_second": 80, "salvo_interval_seconds": 1.3},
@@ -83,16 +84,16 @@ Le fichier livré contient les durées et le chiffre ci-dessous ainsi qu'un obje
 }
 ```
 
-`warning_seconds` est le nombre de secondes **restant** lorsque l'avertissement est émis, et non une durée depuis le déclenchement. Les trois durées doivent être positives et finies ; possession et avertissement doivent être inférieurs à `session_seconds`. `room_digit` est un entier de 0 à 9. `variant` vaut exactement `Mystère` ou `Tension` ; les messages et le parcours restent les mêmes, tandis que Tension renforce progressivement la silhouette, les interférences et le grondement. Le déclencheur utilise un nom de touche pygame-ce et une liste unique, non vide, de `ctrl`, `alt`, `meta` (Commande sur Mac) et `shift`. Le raccourci de remise à zéro est réservé. Si macOS intercepte le déclencheur initial, essayer une autre combinaison dans la configuration, puis la vérifier sur la borne.
+`warning_seconds` est le nombre de secondes **restant** lorsque l'avertissement est émis, et non une durée depuis le déclenchement. Les trois durées doivent être positives et finies ; possession et avertissement doivent être inférieurs à `session_seconds`. `room_digit` est un entier de 0 à 9. `variant` vaut exactement `Mystère` ou `Tension` ; les messages et le parcours restent les mêmes, tandis que Tension renforce progressivement la silhouette, les interférences et le grondement. Le délai avant l'arrivée est fixe : dix secondes. Les touches de modification seules, Échap et le raccourci de remise à zéro ne déclenchent pas la session. Le champ `trigger` des anciennes configurations doit être supprimé.
 
 | Jeu | Réglage numérique | Sens et valeur livrée |
 | --- | --- | --- |
 | Labyrinthe | `pellet_goal_percent` | Part de toutes les pastilles et super-pastilles à ramasser pour gagner ; **100 %** vide le plateau. |
 | Labyrinthe | `ghost_step_seconds` | Temps entre deux pas des fantômes : **0,45 s** ; plus petit les rend plus rapides. |
 | Labyrinthe | `power_seconds` | Durée d'effet d'une super-pastille : **6 s**. |
-| Combat spatial | `score_target` | Score de victoire, entier positif : **3 000 points**. Chaque envahisseur vaut 100 points. |
-| Combat spatial | `enemy_speed_px_per_second` | Vitesse horizontale de base de la formation : **80 pixels/s**, à laquelle s'ajoutent 12 pixels/s par vague. |
-| Combat spatial | `salvo_interval_seconds` | Intervalle de base entre salves ennemies : **1,3 s** ; il se raccourcit de 0,08 s par vague, sans passer sous 0,7 s. |
+| Space Invaders | `score_target` | Score de victoire, entier positif : **3 000 points**. Un envahisseur vaut **30**, **20** ou **10** points selon sa rangée. |
+| Space Invaders | `enemy_speed_px_per_second` | Vitesse horizontale de base de la formation : **80 pixels/s**, à laquelle s'ajoutent 12 pixels/s par vague. La formation rebondit sur les bords sans descendre. |
+| Space Invaders | `salvo_interval_seconds` | Intervalle de base entre salves ennemies : **1,3 s** ; il se raccourcit de 0,08 s par vague, sans passer sous 0,7 s. |
 | Plateformes | `goal_progress_percent` | Hauteur à atteindre en étant sur une échelle ou une passerelle : **100 %** impose la princesse sur sa terrasse ; une valeur moindre termine le jeu plus tôt. |
 | Plateformes | `barrel_interval_seconds` | Intervalle initial de lancer : **4 s** ; il peut diminuer pendant la montée, avec un plancher de 80 % du réglage ou 1 s. |
 | Plateformes | `barrel_speed_px_per_second` | Vitesse initiale des barriques : **85 pixels/s**. |
@@ -108,7 +109,7 @@ Les pourcentages doivent être supérieurs à 0 et au plus égaux à 100 ; `scor
 .venv/bin/python -m retro_gaming --test-mode
 ```
 
-Le badge **MODE TEST** identifie ce mode. Il multiplie **en mémoire** les trois durées de session, possession et avertissement par 0,1 ; `config.json` reste inchangé. Avec le fichier livré, cela donne 30 secondes de session, 1,2 seconde de possession et un avertissement à 6 secondes de la fin. Pendant une partie intégrée active, le temps de simulation du jeu avance **10 fois plus vite** que le temps réel ; les déplacements, ennemis et animations progressent donc plus vite. Les lanceurs autonomes gardent leur vitesse normale. Pour une répétition manuelle avec davantage de temps de réaction, préparer une copie de configuration avec une session plus longue, puis lancer `--config /chemin/vers/copie.json --test-mode`. Évaluer la difficulté destinée au public **en mode normal**.
+Le badge **MODE TEST** identifie ce mode. Il multiplie **en mémoire** les durées de session, possession, avertissement et attente du signal par 0,1 ; `config.json` reste inchangé. Avec le fichier livré, cela donne 30 secondes de session, une seconde d'attente, 1,2 seconde de possession et un avertissement à 6 secondes de la fin. Pendant une partie intégrée active, le temps de simulation du jeu avance **10 fois plus vite** que le temps réel ; les déplacements, ennemis et animations progressent donc plus vite. Les lanceurs autonomes gardent leur vitesse normale. Pour une répétition manuelle avec davantage de temps de réaction, préparer une copie de configuration avec une session plus longue, puis lancer `--config /chemin/vers/copie.json --test-mode`. Évaluer la difficulté destinée au public **en mode normal**.
 
 Pour répéter les issues : déclencher, choisir un jeu et gagner pour vérifier le chiffre et le mode libre ; remettre à zéro ; déclencher et perdre les trois jeux différents pour vérifier l'échec sans chiffre ; attendre l'échéance dans chaque issue ; remettre à zéro et refaire un cycle. Vérifier aussi la remise à zéro depuis une scène et une partie. La grille d'observation détaillée est dans [docs/arcade-validation.md](docs/arcade-validation.md).
 

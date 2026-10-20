@@ -9,15 +9,15 @@
 - Elf, le personnage de Onze (Eleven) dans Stranger Things, remplace le robot HAWK-80. Elle intervient avec ses pouvoirs pour contrer la possession et aider les participants ; elle transmet les règles du défi.
 - Univers inspiré de Stranger Things : laboratoire abandonné, dimension parallèle, racines organiques et interférences rouges. La référence explicite à Elf remplace le choix antérieur d’une fiction entièrement originale ; les trois jeux et les ressources produites restent originaux.
 - Public pouvant être relativement jeune ; des POC doivent permettre de calibrer l’intensité.
-- Le chronomètre global démarre au déclenchement de la possession et inclut la mise en scène ; l’accueil n’est pas chronométré.
+- La première touche ordinaire démarre le chronomètre global et une attente de dix secondes avant l’arrivée du Démogorgon ; le temps inclut ensuite la possession, les scènes et les parties. Le laboratoire reste hors chronomètre tant que personne n’a appuyé.
 - Pas de commandes dédiées de pause du chronomètre ou de coupure des effets pour gérer les réactions du public : l’équipe d’animation gère la situation sur place.
 - Après épuisement des tentatives, écran d’échec sans révélation automatique du chiffre. L’animateur peut accorder une tentative supplémentaire.
 - Premier POC centré sur la séquence laboratoire → déclenchement → possession → intervention de Elf, avec deux intensités à comparer. Il sert à éprouver le déclenchement et la réaction du public avant la production complète des effets.
-- Déclencheur du POC sur Mac : Contrôle + Option + Commande + Espace. F9 écarté pour des raisons pratiques sur ordinateur portable. La réception effective de la combinaison doit être validée sur la machine ; le choix d’une télécommande reste ouvert.
+- Sur Mac, Contrôle + Option + Commande + Espace remet la borne à l’état initial. La première touche ordinaire lance le parcours ; Échap quitte l’application.
 - À l’accueil, le terminal affiche seul ses diagnostics et sert de décor pendant l’introduction. Elf apparaît lors de la possession comme une alliée qui reprend contact.
 - Premier test sans voix : texte lisible, consignes conservées à l’écran et bips originaux. La nécessité d’une voix sera évaluée après ce test, notamment pour les plus jeunes ; le choix d’une voix robotique concernait l’ancien personnage et n’est pas retenu pour Elf à ce stade.
 - Deux variantes de possession, environ 12 secondes chacune, durée configurable : « Mystère » (diagnostics anormaux, parasites légers, racines, intervention de Elf) et « Tension » (mêmes informations, déformations plus marquées, silhouette abstraite, grondement plus présent). Sans flash rapide ni sursaut brutal.
-- Après l’alarme finale, retour manuel réservé à l’animateur : effacement du chiffre affiché, des tentatives et du chronomètre, puis rétablissement du laboratoire de 1986 pour la prochaine équipe.
+- Après l’alarme finale, remise à zéro réservée à l’animateur : effacement du chiffre affiché, des tentatives et du chronomètre, puis rétablissement du laboratoire de 1986 pour la prochaine équipe.
 - Après la victoire, Elf reprend le contrôle, révèle le chiffre et déverrouille les trois jeux. Quelques traces de possession restent visibles dans une ambiance devenue rassurante.
 - L’entité disparaît mais annonce qu’elle reviendra : la victoire dans cette salle est provisoire et prépare un nouveau combat plus tard dans le parcours.
 
@@ -28,7 +28,7 @@ Les équipes traversent plusieurs salles et y récupèrent des chiffres. Leur co
 ## Contraintes du MVP demandées
 
 - Python/Pygame, développement et déploiement sur macOS Apple Silicon. Linux et Omarchy ne sont pas des plateformes cibles.
-- Trois jeux originaux : un labyrinthe à vider, un combat spatial par vagues et un jeu de plateformes 2D inspiré des jeux d’arcade des années 80. Le jeu de plateformes remplace l’ancienne idée d’empilement de blocs. Il comporte un niveau fixe avec plateformes et échelles; le participant se déplace et grimpe avec les flèches ou WASD, et saute avec Espace. Atteindre la sortie en haut gagne la manche; le contact avec un obstacle mobile ou une chute la fait perdre.
+- Trois hommages aux jeux d’arcade des années 80 : **Pac-Man** (labyrinthe à vider), **Space Invaders** (combat spatial par vagues, formation horizontale qui ne descend pas) et **Donkey Kong** (jeu de plateformes 2D). Le jeu de plateformes comporte un niveau fixe avec plateformes et échelles; le participant se déplace et grimpe avec les flèches ou WASD, et saute avec Espace. Atteindre la sortie en haut gagne la manche; le contact avec un obstacle mobile ou une chute la fait perdre.
 - Un joueur à la fois, trois tentatives par défaut, changement de joueur possible entre les tentatives et même jeu pendant le défi.
 - Objectifs, difficulté, nombre de tentatives, chiffre secret, durée globale et avertissement configurables extérieurement.
 - Révélation du chiffre à la réussite, puis accès libre aux trois jeux jusqu’à expiration du temps global.
@@ -37,9 +37,8 @@ Les équipes traversent plusieurs salles et y récupèrent des chiffres. Leur co
 
 ## Questions ouvertes
 
-- Support du déclenchement : touche, clic, clavier déporté, télécommande Bluetooth ou matériel réutilisable. Aucun matériel choisi ni testé à ce stade.
 - Intensité adaptée au public, à fixer après essais.
-- Matériel définitif du déclenchement et prise en charge effective de la combinaison sur les systèmes cibles.
+- Vérifier sur le Mac de la salle la réception du clavier, le raccourci de remise à zéro, le plein écran et le niveau sonore.
 
 ## Prochaine étape
 

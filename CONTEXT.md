@@ -12,16 +12,17 @@ Prise de contrôle fictive de l’ordinateur par une entité, qui fait basculer 
 _Éviter_ : panne réelle, piratage réel.
 
 **Entité** :
-Présence antagoniste originale issue d’une dimension parallèle, responsable de la possession.
-_Éviter_ : Démogorgon, personnage de Stranger Things.
+Le Démogorgon, présence antagoniste issue d’une dimension parallèle et responsable de la possession.
 
 **Elf** :
 Personnage de Onze (Eleven) dans Stranger Things, alliée des participants. Elle intervient avec ses pouvoirs pour contrer la possession, les guider dans le défi et reprendre le contrôle de la machine.
 _Éviter_ : HAWK-80, robot animateur.
 
 **Déclenchement** :
-Action volontaire de l’animateur qui lance la possession ; son support matériel reste à choisir.
-_Éviter_ : déclenchement automatique, lorsque l’on désigne cette action volontaire.
+Première touche ordinaire au clavier, qui démarre le chronomètre global et annonce l’arrivée du Démogorgon dix secondes plus tard.
+
+**Remise à zéro** :
+Action de l’animateur qui arrête la session en cours et rétablit le laboratoire dans son état initial pour l’équipe suivante.
 
 **Défi** :
 Épreuve de salle où l’équipe choisit parmi les trois jeux jusqu’à gagner une partie ou perdre trois jeux. Une victoire révèle le chiffre de salle.

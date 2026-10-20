@@ -5,6 +5,7 @@ import pygame
 
 from retro_gaming.maze.game import Game, GameState, PlayerInput, Result
 from retro_gaming.rendering import draw_centered_label as _label
+from retro_gaming.soundtrack import Soundtrack
 
 CELL = 36
 HEADER = 86
@@ -25,7 +26,7 @@ def _draw(surface: pygame.Surface, state: GameState,
     width = len(state.rows[0]) * CELL
     height = len(state.rows) * CELL + HEADER + FOOTER
     surface.fill(BACKGROUND)
-    _label(surface, heading, "LABYRINTHE", (width // 2, 23), PLAYER)
+    _label(surface, heading, "PAC-MAN", (width // 2, 23), PLAYER)
     _label(surface, small, f"SCORE {state.score:05}      VIES {state.lives} / 3",
            (width // 2, 51), TEXT)
     count = len(state.pellets) + len(state.power_pellets)
@@ -92,7 +93,8 @@ def run() -> None:
         game = Game()
         screen = pygame.display.set_mode((len(game.state.rows[0]) * CELL,
                                           len(game.state.rows) * CELL + HEADER + FOOTER))
-        pygame.display.set_caption("Labyrinthe | Arcade")
+        pygame.display.set_caption("Pac-Man | Arcade")
+        soundtrack = Soundtrack("Mystère") if pygame.mixer.get_init() else None
         heading = pygame.font.SysFont("menlo,monaco,couriernew,monospace", 28, bold=True)
         small = pygame.font.SysFont("menlo,monaco,couriernew,monospace", 14)
         clock = pygame.time.Clock()
@@ -109,7 +111,11 @@ def run() -> None:
             game.advance(elapsed, PlayerInput(
                 up=keys[pygame.K_UP] or keys[pygame.K_w], down=keys[pygame.K_DOWN] or keys[pygame.K_s],
                 left=keys[pygame.K_LEFT] or keys[pygame.K_a], right=keys[pygame.K_RIGHT] or keys[pygame.K_d]))
+            if soundtrack:
+                soundtrack.set_scene("game:maze" if game.state.result is Result.PLAYING else None)
             _draw(screen, game.state, heading, small, time)
             pygame.display.flip()
     finally:
+        if "soundtrack" in locals() and soundtrack:
+            soundtrack.set_scene(None)
         pygame.quit()

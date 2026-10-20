@@ -3,8 +3,10 @@
 import pygame
 
 from retro_gaming.rendering import draw_centered_label as _label
+from retro_gaming.soundtrack import Soundtrack
 from retro_gaming.space_combat.game import (
-    DEFAULT_SCORE_TARGET, ENEMY_HALF_HEIGHT, ENEMY_HALF_WIDTH, Game, GameState, PlayerInput, Result,
+    DEFAULT_SCORE_TARGET, Enemy, Game, GameState,
+    PlayerInput, Result,
 )
 
 
@@ -14,6 +16,10 @@ CYAN = (108, 227, 226)
 PALE = (211, 244, 241)
 AMBER = (240, 184, 103)
 RED = (230, 106, 111)
+CLASSIC_RED = (255, 32, 24)
+CLASSIC_BLUE = (20, 200, 242)
+CLASSIC_YELLOW = (255, 242, 16)
+CLASSIC_ORANGE = (225, 91, 34)
 
 
 def _draw_ship(surface: pygame.Surface, x: float, y: float) -> None:
@@ -26,16 +32,28 @@ def _draw_ship(surface: pygame.Surface, x: float, y: float) -> None:
     pygame.draw.line(surface, AMBER, (x - 9, y + 20), (x + 9, y + 20), 3)
 
 
-def _draw_enemy(surface: pygame.Surface, x: float, y: float) -> None:
-    x, y = round(x), round(y)
-    pygame.draw.polygon(surface, RED, [(x - ENEMY_HALF_WIDTH, y - 7),
-                                       (x - 10, y - ENEMY_HALF_HEIGHT),
-                                       (x + 10, y - ENEMY_HALF_HEIGHT),
-                                       (x + ENEMY_HALF_WIDTH, y - 7),
-                                       (x + 16, y + 10), (x + 8, y + 6),
-                                       (x, y + ENEMY_HALF_HEIGHT), (x - 8, y + 6),
-                                       (x - 16, y + 10)])
-    pygame.draw.line(surface, BACKGROUND, (x - 8, y - 3), (x + 8, y - 3), 3)
+_INVADER_SPRITES = (
+    ("..#.....#..", ".###...###.", "###########", "##.#####.##",
+     "###########", "..##...##..", ".##.....##."),
+    ("...##.##...", "..#######..", ".##.###.##.", "############",
+     "##.#####.##", "##.......##", "..##...##.."),
+    ("....###....", "..#######..", ".##.###.##.", "############",
+     "###.....###", "..##...##..", ".##.....##."),
+)
+
+
+def _draw_enemy(surface: pygame.Surface, enemy: Enemy) -> None:
+    sprite = _INVADER_SPRITES[enemy.kind]
+    color = (CLASSIC_RED, CLASSIC_BLUE, CLASSIC_YELLOW)[enemy.kind]
+    scale = 3
+    origin_x = round(enemy.x) - len(sprite[0]) * scale // 2
+    origin_y = round(enemy.y) - len(sprite) * scale // 2
+    for row, pattern in enumerate(sprite):
+        for column, pixel in enumerate(pattern):
+            if pixel == "#":
+                pygame.draw.rect(surface, color,
+                                 (origin_x + column * scale, origin_y + row * scale,
+                                  scale, scale))
 
 
 def _draw(surface: pygame.Surface, state: GameState,
@@ -50,14 +68,14 @@ def _draw(surface: pygame.Surface, state: GameState,
                            1 + (index % 17 == 0))
     pygame.draw.line(surface, (33, 77, 90), (20, state.height - 2),
                      (state.width - 20, state.height - 2), 2)
-    _label(surface, small, f"COMBAT SPATIAL   /   VAGUE {state.wave:02}", (240, 26), CYAN)
+    _label(surface, small, f"SPACE INVADERS   /   VAGUE {state.wave:02}", (240, 26), CYAN)
     _label(surface, small, f"SCORE {state.score:05} / {state.score_target:05}",
            (state.width - 220, 26), PALE)
     _label(surface, small, f"VIES {state.lives} / 3   •   ATTEINDRE LE SCORE CIBLE",
            (state.width // 2, 54), AMBER)
     for block in state.shelters:
         rect = pygame.Rect(round(block.x - 5), round(block.y - 5), 11, 11)
-        pygame.draw.rect(surface, CYAN if block.health == 2 else (57, 137, 150), rect)
+        pygame.draw.rect(surface, CLASSIC_ORANGE if block.health == 2 else (131, 67, 48), rect)
         if block.health == 1:
             pygame.draw.line(surface, BACKGROUND, rect.topleft, rect.bottomright, 2)
     for shot in state.enemy_shots:
@@ -65,7 +83,28 @@ def _draw(surface: pygame.Surface, state: GameState,
         pygame.draw.lines(surface, RED, False, [(x - 5, y - 12), (x + 5, y - 3), (x - 5, y + 6), (x, y + 12)], 4)
         pygame.draw.circle(surface, AMBER, (x, y + 12), 3)
     for enemy in state.enemies:
-        _draw_enemy(surface, enemy.x, enemy.y)
+        _draw_enemy(surface, enemy)
+    # Short pixel burst: clear collision feedback, styled like a tiny arcade sprite.
+    for explosion in state.explosions:
+        progress = explosion.age / 0.36
+        x, y = round(explosion.x), round(explosion.y)
+        radius = 8 + round(progress * 30)
+        shard = 7
+        pygame.draw.rect(surface, PALE if progress < 0.45 else AMBER,
+                         (x - 6, y - 6, 12, 12))
+        pygame.draw.rect(surface, AMBER, (x - radius, y - 2, shard, shard))
+        pygame.draw.rect(surface, AMBER, (x + radius - shard, y - 2, shard, shard))
+        pygame.draw.rect(surface, RED, (x - 2, y - radius, shard, shard))
+        pygame.draw.rect(surface, RED, (x - 2, y + radius - shard, shard, shard))
+        pygame.draw.rect(surface, CLASSIC_BLUE, (x - radius, y - radius, shard, shard))
+        pygame.draw.rect(surface, CLASSIC_BLUE, (x + radius - shard, y + radius - shard, shard, shard))
+        pygame.draw.rect(surface, CLASSIC_YELLOW, (x + radius - shard, y - radius, shard, shard))
+        pygame.draw.rect(surface, CLASSIC_RED, (x - radius, y + radius - shard, shard, shard))
+        if progress < 0.45:
+            pygame.draw.rect(surface, PALE, (x - 18, y - 2, 36, 4))
+            pygame.draw.rect(surface, PALE, (x - 2, y - 18, 4, 36))
+        _label(surface, small, f"+{explosion.points}",
+               (x, y - radius - 14 - round(progress * 12)), AMBER)
     for shot in state.shots:
         pygame.draw.line(surface, AMBER, (round(shot.x), round(shot.y + 8)),
                          (round(shot.x), round(shot.y - 8)), 3)
@@ -93,7 +132,8 @@ def run(score_target: int = DEFAULT_SCORE_TARGET) -> None:
     try:
         game = Game(score_target=score_target)
         screen = pygame.display.set_mode((game.state.width, game.state.height))
-        pygame.display.set_caption("Combat spatial | Vague 01")
+        pygame.display.set_caption("Space Invaders | Vague 01")
+        soundtrack = Soundtrack("Mystère") if pygame.mixer.get_init() else None
         heading = pygame.font.SysFont("menlo,monaco,couriernew,monospace", 46, bold=True)
         small = pygame.font.SysFont("menlo,monaco,couriernew,monospace", 18)
         clock = pygame.time.Clock()
@@ -115,7 +155,11 @@ def run(score_target: int = DEFAULT_SCORE_TARGET) -> None:
                 right=keys[pygame.K_RIGHT] or keys[pygame.K_d],
                 shoot=keys[pygame.K_SPACE],
             ))
+            if soundtrack:
+                soundtrack.set_scene("game:space_combat" if game.state.result is Result.PLAYING else None)
             _draw(screen, game.state, heading, small, time)
             pygame.display.flip()
     finally:
+        if "soundtrack" in locals() and soundtrack:
+            soundtrack.set_scene(None)
         pygame.quit()

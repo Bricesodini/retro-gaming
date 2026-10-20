@@ -5,6 +5,7 @@ import pygame
 
 from retro_gaming.platformer.game import Game, GameState, PlayerInput, Result
 from retro_gaming.rendering import draw_centered_label as _label
+from retro_gaming.soundtrack import Soundtrack
 
 HEADER = 144
 FOOTER = 48
@@ -118,7 +119,7 @@ def _draw(surface: pygame.Surface, state: GameState,
     level = state.level
     width, height = level.width, level.height + HEADER + FOOTER
     surface.fill(BACKGROUND)
-    _label(surface, heading, "ASCENSION", (150, 27), AMBER)
+    _label(surface, heading, "DONKEY KONG", (150, 27), AMBER)
     _label(surface, small, f"VIES {state.lives} / 3   •   SOMMET {round(state.progress * 100):02}%",
            (width - 210, 24), TEXT)
     _label(surface, small, "REJOIGNEZ LA PRINCESSE  •  BARRIQUES ET FLAMMES EN APPROCHE",
@@ -178,7 +179,8 @@ def run() -> None:
     try:
         game = Game()
         screen = pygame.display.set_mode((game.state.level.width, game.state.level.height + HEADER + FOOTER))
-        pygame.display.set_caption("Ascension | Arcade originale")
+        pygame.display.set_caption("Donkey Kong | Arcade")
+        soundtrack = Soundtrack("Mystère") if pygame.mixer.get_init() else None
         heading = pygame.font.SysFont("menlo,monaco,couriernew,monospace", 30, bold=True)
         small = pygame.font.SysFont("menlo,monaco,couriernew,monospace", 15)
         clock = pygame.time.Clock()
@@ -196,7 +198,11 @@ def run() -> None:
                 left=keys[pygame.K_LEFT] or keys[pygame.K_a], right=keys[pygame.K_RIGHT] or keys[pygame.K_d],
                 up=keys[pygame.K_UP] or keys[pygame.K_w], down=keys[pygame.K_DOWN] or keys[pygame.K_s],
                 jump=keys[pygame.K_SPACE]))
+            if soundtrack:
+                soundtrack.set_scene("game:platformer" if game.state.result is Result.PLAYING else None)
             _draw(screen, game.state, heading, small, time)
             pygame.display.flip()
     finally:
+        if "soundtrack" in locals() and soundtrack:
+            soundtrack.set_scene(None)
         pygame.quit()

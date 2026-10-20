@@ -30,6 +30,8 @@ class SessionState:
     timer_visible: bool = False
     room_result: str | None = None
     free_mode: bool = False
+    return_takeover: bool = False
+    arrival_seconds: float | None = None
 
 
 GAMES = ("maze", "space_combat", "platformer")
@@ -44,7 +46,8 @@ def _chosen_game(action: str | None) -> str | None:
 
 class Session:
     def __init__(self, session_seconds: float = 300, possession_seconds: float = 12,
-                 warning_seconds: float = 60, room_digit: int = 4):
+                 warning_seconds: float = 60, room_digit: int = 4,
+                 signal_seconds: float = 0):
         if any(not math.isfinite(value) or value <= 0 for value in
                (session_seconds, possession_seconds, warning_seconds)):
             raise ValueError("Les durées de session, de possession et d'avertissement doivent être positives et finies.")
@@ -52,12 +55,15 @@ class Session:
             raise ValueError("La possession doit être plus courte que la session.")
         if warning_seconds >= session_seconds:
             raise ValueError("L'avertissement doit être avant la fin et à l'intérieur de la session.")
+        if not math.isfinite(signal_seconds) or signal_seconds < 0:
+            raise ValueError("Le délai d'arrivée doit être positif ou nul et fini.")
         if type(room_digit) is not int or not 0 <= room_digit <= 9:
             raise ValueError("Le chiffre de salle doit être un entier de 0 à 9.")
         self.session_seconds = session_seconds
         self.possession_seconds = possession_seconds
         self.warning_seconds = warning_seconds
         self.room_digit = room_digit
+        self.signal_seconds = signal_seconds
         self._active_seconds: float | None = None
         self._warning_sent = False
         self._alarm_sent = False
@@ -111,12 +117,18 @@ class Session:
             self._game_result = None
             return SessionState(Phase.FIN, 0, tuple(events),
                                 ("ELF // Le temps est écoulé. Rejoignez la salle suivante.",),
+                                timer_visible=not self._free_open,
                                 room_result="victory" if self._won else "defeat" if self._failed else None)
-        if elapsed < self.possession_seconds:
+        if elapsed < self.signal_seconds:
+            return SessionState(Phase.LABORATOIRE, remaining, tuple(events),
+                                timer_visible=True,
+                                arrival_seconds=self.signal_seconds - elapsed)
+        possession_elapsed = elapsed - self.signal_seconds
+        if possession_elapsed < self.possession_seconds:
             messages = ()
-            if elapsed >= self.possession_seconds * 0.35:
-                messages = ("ENTITE // Ce terminal m'appartient. Vous êtes pris au piège.",)
-            if elapsed >= self.possession_seconds * 0.65:
+            if possession_elapsed >= self.possession_seconds * 0.35:
+                messages = ("DEMOGORGON // Ce terminal m'appartient. Vous êtes pris au piège.",)
+            if possession_elapsed >= self.possession_seconds * 0.65:
                 messages += ("ELF // Je vous entends. Restez ensemble.",)
             return SessionState(Phase.POSSESSION, remaining, tuple(events), messages,
                                 timer_visible=True)
@@ -128,10 +140,15 @@ class Session:
             self._takeover_started = elapsed
             self._returning_elf = True
         if self._takeover_started is not None:
-            if elapsed - self._takeover_started < self.possession_seconds:
+            return_duration = min(2.5, self.possession_seconds * 0.5,
+                                 max(0.8, self.possession_seconds * 0.2))
+            takeover_elapsed = elapsed - self._takeover_started
+            if takeover_elapsed < return_duration:
+                messages = ("DEMOGORGON // Ce terminal est à moi.",)
+                if takeover_elapsed >= return_duration * 0.45:
+                    messages += ("ELF // Je reprends le signal. Tenez bon !",)
                 return SessionState(Phase.POSSESSION, remaining, tuple(events),
-                                    ("ENTITE // Ce terminal est à moi.",),
-                                    timer_visible=True)
+                                    messages, timer_visible=True, return_takeover=True)
             self._takeover_started = None
             if len(self._lost_games) == len(GAMES):
                 self._failed = True
@@ -149,10 +166,10 @@ class Session:
                 self._free_open = True
             else:
                 return SessionState(Phase.VICTOIRE, remaining, tuple(events), (
-                    "ELF // La salle est libérée. L'entité reviendra.",
+                    "ELF // La salle est libérée. Le Démogorgon reviendra.",
                     f"CHIFFRE DE SALLE : {self.room_digit}",
                     "Les trois jeux sont maintenant libres. Appuyez sur ENTREE.",
-                ), room_result="victory")
+                ), timer_visible=True, room_result="victory")
         if self._active_game is not None:
             if self._won and self._game_result is not None:
                 self._active_game = None
@@ -169,7 +186,7 @@ class Session:
                         if self._game_result else ())
             return SessionState(phase, remaining, tuple(events), messages,
                                 active_game=self._active_game, game_result=self._game_result,
-                                timer_visible=not self._won and self._game_result != "victory",
+                                timer_visible=not self._free_open,
                                 room_result="victory" if self._won or self._game_result == "victory" else None,
                                 free_mode=self._free_open)
         if self._free_open:
@@ -201,11 +218,11 @@ class Session:
             return SessionState(Phase.ELF, remaining, tuple(events), (
                 "ELF // Je suis revenue.",
                 "Vous avez une nouvelle chance.",
-                "Choisissez un autre jeu pour repousser l'entité.",
+                "Choisissez un autre jeu pour repousser le Démogorgon.",
             ), timer_visible=True)
         return SessionState(Phase.ELF, remaining, tuple(events), (
             "ELF // C'est moi, Elf. Je retiens cette présence.",
-            "L'entité a pris le contrôle du laboratoire.",
+            "Le Démogorgon a pris le contrôle du laboratoire.",
             "Un défi vous attend dans ce laboratoire.",
             "J'ai besoin de votre aide pour la repousser.",
             "Appuyez sur ENTREE pour choisir un jeu.",

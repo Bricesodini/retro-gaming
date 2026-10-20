@@ -4,6 +4,39 @@ from retro_gaming.session import Phase, Session, SessionState
 
 
 class WelcomeJourneyTest(unittest.TestCase):
+    def test_first_key_arms_ten_second_arrival_and_starts_global_clock(self):
+        session = Session(session_seconds=180, possession_seconds=12,
+                          signal_seconds=10)
+        armed = session.advance(0, "declencher_mystere")
+        repeated = session.advance(4, "declencher_mystere")
+        approaching = session.advance(5.9, None)
+        arrived = session.advance(0.1, None)
+        contact = session.advance(12, None)
+
+        self.assertEqual((armed.phase, armed.remaining_seconds, armed.arrival_seconds),
+                         (Phase.LABORATOIRE, 180, 10))
+        self.assertTrue(armed.timer_visible)
+        self.assertEqual((repeated.remaining_seconds, repeated.arrival_seconds), (176, 6))
+        self.assertEqual(approaching.phase, Phase.LABORATOIRE)
+        self.assertAlmostEqual(approaching.arrival_seconds, 0.1)
+        self.assertEqual((arrived.phase, arrived.remaining_seconds),
+                         (Phase.POSSESSION, 170))
+        self.assertIsNone(arrived.arrival_seconds)
+        self.assertEqual((contact.phase, contact.remaining_seconds), (Phase.ELF, 158))
+
+    def test_reset_during_arrival_clears_clock_and_allows_second_cycle(self):
+        session = Session(session_seconds=180, possession_seconds=12,
+                          signal_seconds=10)
+        session.advance(0, "declencher_mystere")
+        session.advance(5, None)
+        self.assertEqual(session.advance(0, "reinitialiser"),
+                         SessionState(Phase.LABORATOIRE, None, ()))
+        self.assertEqual(session.advance(50, None).phase, Phase.LABORATOIRE)
+        restarted = session.advance(0, "declencher_mystere")
+        self.assertEqual((restarted.remaining_seconds, restarted.arrival_seconds),
+                         (180, 10))
+        self.assertEqual(session.advance(10, None).phase, Phase.POSSESSION)
+
     def test_waiting_at_laboratory_keeps_session_clock_inactive(self):
         session = Session()
 
@@ -149,7 +182,7 @@ class ArcadeJourneyTest(unittest.TestCase):
         session.advance(0, "choisir_maze")
         won = session.advance(7, None, "victory")
         self.assertEqual((won.phase, won.room_result, won.timer_visible),
-                         (Phase.RESULTAT, "victory", False))
+                         (Phase.RESULTAT, "victory", True))
         ended = session.advance(1, None)
         self.assertEqual((ended.phase, ended.room_result, ended.events),
                          (Phase.FIN, "victory", ("alarme",)))
@@ -168,7 +201,7 @@ class ArcadeJourneyTest(unittest.TestCase):
                 self.assertEqual(won.phase, Phase.VICTOIRE)
                 self.assertEqual(won.room_result, "victory")
                 self.assertIn("7", " ".join(won.messages))
-                self.assertFalse(won.timer_visible)
+                self.assertTrue(won.timer_visible)
                 free = session.advance(0, "continuer")
                 self.assertEqual(free.phase, Phase.LIBRE)
                 self.assertEqual(free.available_games, ("maze", "space_combat", "platformer"))
@@ -207,6 +240,26 @@ class ArcadeJourneyTest(unittest.TestCase):
         self.assertEqual(elf.phase, Phase.ELF)
         self.assertEqual(session.advance(0, "continuer").phase, Phase.CHOIX)
 
+    def test_return_takeover_is_a_short_distinct_clash_before_elf_returns(self):
+        session = Session(session_seconds=60, possession_seconds=10, warning_seconds=5)
+        session.advance(0, "declencher_mystere")
+        session.advance(10, None)
+        session.advance(0, "continuer")
+        session.advance(0, "choisir_maze")
+        session.advance(0, None, game_result="defeat")
+
+        takeover = session.advance(0, None)
+        clash = session.advance(1, None)
+        elf = session.advance(1, None)
+
+        self.assertEqual(takeover.phase, Phase.POSSESSION)
+        self.assertTrue(takeover.return_takeover)
+        self.assertEqual(clash.phase, Phase.POSSESSION)
+        self.assertTrue(clash.return_takeover)
+        self.assertIn("ELF", " ".join(clash.messages))
+        self.assertEqual(elf.phase, Phase.ELF)
+        self.assertFalse(elf.return_takeover)
+
     def test_deadline_overrides_defeat_recovery_and_choice(self):
         for phase in (Phase.POSSESSION, Phase.ELF, Phase.CHOIX):
             with self.subTest(phase=phase):
@@ -239,7 +292,7 @@ class ArcadeJourneyTest(unittest.TestCase):
             session.advance(1, None, game_result="defeat")
             entity = session.advance(0, None)
             self.assertEqual(entity.phase, Phase.POSSESSION)
-            self.assertIn("ENTITE", " ".join(entity.messages))
+            self.assertIn("DEMOGORGON", " ".join(entity.messages))
             after_takeover = session.advance(2, None)
             if game != "platformer":
                 self.assertEqual(after_takeover.phase, Phase.ELF)
@@ -276,7 +329,7 @@ class ArcadeJourneyTest(unittest.TestCase):
 
         self.assertEqual((lost.phase, lost.game_result), (Phase.RESULTAT, "defeat"))
         self.assertEqual(takeover.phase, Phase.POSSESSION)
-        self.assertIn("ENTITE", " ".join(takeover.messages))
+        self.assertIn("DEMOGORGON", " ".join(takeover.messages))
         self.assertEqual(takeover.remaining_seconds, 81)
         self.assertEqual(elf.phase, Phase.ELF)
         self.assertIn("nouvelle chance", " ".join(elf.messages).lower())
@@ -291,7 +344,7 @@ class ArcadeJourneyTest(unittest.TestCase):
         elf = session.advance(6, None)
         choice = session.advance(0, "continuer")
         self.assertEqual(initial.phase, Phase.POSSESSION)
-        self.assertIn("ENTITE", " ".join(entity.messages))
+        self.assertIn("DEMOGORGON", " ".join(entity.messages))
         self.assertEqual(elf.phase, Phase.ELF)
         self.assertIn("aide", " ".join(elf.messages).lower())
         self.assertEqual(choice.phase, Phase.CHOIX)
@@ -312,6 +365,7 @@ class ArcadeJourneyTest(unittest.TestCase):
                 self.assertEqual((result.phase, result.active_game, result.game_result),
                                  (Phase.RESULTAT, game, "victory"))
                 self.assertEqual(result.remaining_seconds, 55)
+                self.assertTrue(result.timer_visible)
 
     def test_time_expiry_overrides_game_result_and_reset_clears_game(self):
         session = Session(session_seconds=10, possession_seconds=2, warning_seconds=3)
@@ -322,7 +376,7 @@ class ArcadeJourneyTest(unittest.TestCase):
         ended = session.advance(10, None, game_result="victory")
         self.assertEqual((ended.phase, ended.active_game, ended.game_result), (Phase.FIN, None, None))
         self.assertEqual(ended.events, ("avertissement", "alarme"))
-        self.assertFalse(ended.timer_visible)
+        self.assertTrue(ended.timer_visible)
         reset = session.advance(0, "reinitialiser")
         self.assertEqual(reset.phase, Phase.LABORATOIRE)
         self.assertIsNone(reset.active_game)

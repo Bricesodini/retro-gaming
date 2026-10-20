@@ -13,6 +13,7 @@ from retro_gaming.session import Phase, Session
 from retro_gaming.maze import game as maze_game, window as maze_window
 from retro_gaming.space_combat import game as space_game, window as space_window
 from retro_gaming.platformer import game as platform_game, window as platform_window
+from retro_gaming.soundtrack import Soundtrack
 
 
 WIDTH = 1200
@@ -58,9 +59,48 @@ def _label(
     surface.blit(font.render(text, True, color), pos)
 
 
+def _wrap_text(text: str, font: pygame.font.Font, max_width: int) -> tuple[str, ...]:
+    lines: list[str] = []
+    current = ""
+    for word in text.split():
+        candidate = f"{current} {word}".strip()
+        if current and font.size(candidate)[0] > max_width:
+            lines.append(current)
+            current = word
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return tuple(lines)
+
+
+def _draw_wrapped_text(surface: pygame.Surface, text: str, font: pygame.font.Font,
+                       pos: tuple[int, int], color: tuple[int, int, int],
+                       max_width: int, line_spacing: int | None = None) -> int:
+    spacing = line_spacing or font.get_linesize()
+    lines = _wrap_text(text, font, max_width)
+    for index, line in enumerate(lines):
+        _label(surface, font, line, (pos[0], pos[1] + index * spacing), color)
+    return pos[1] + len(lines) * spacing
+
+
 def _panel(surface: pygame.Surface, rect: pygame.Rect) -> None:
     pygame.draw.rect(surface, PANEL, rect, border_radius=7)
     pygame.draw.rect(surface, LINE, rect, 1, border_radius=7)
+
+
+def _draw_elf_portrait(surface: pygame.Surface, portrait: pygame.Surface,
+                       position: tuple[int, int], size: tuple[int, int]) -> None:
+    image = pygame.transform.scale(portrait, size)
+    surface.blit(image, position)
+
+
+def _draw_entity_portrait(surface: pygame.Surface, portrait: pygame.Surface,
+                          position: tuple[int, int], size: tuple[int, int],
+                          elapsed: float) -> None:
+    image = pygame.transform.scale(portrait, size)
+    image.set_alpha(min(255, 110 + int(145 * min(1.0, elapsed / 0.3))))
+    surface.blit(image, position)
 
 
 def _draw_grid(surface: pygame.Surface) -> None:
@@ -115,7 +155,7 @@ def _draw_welcome(surface: pygame.Surface, elapsed: float, active: bool = False)
     pygame.draw.rect(surface, GREEN_DIM, pygame.Rect(0, 0, WIDTH, 6))
 
     _label(surface, _font(14), "INSTITUT DE RECHERCHE  /  SYSTEME LOCAL", (41, 30), GREEN_DIM)
-    _label(surface, _font(14), "ARCHIVE 1986       UNITE 04", (907, 30), GREEN_DIM)
+    _label(surface, _font(14), "ARCHIVE 1986       UNITE 04", (646, 30), GREEN_DIM)
     pygame.draw.line(surface, LINE, (40, 62), (1160, 62))
 
     _label(surface, _font(42, bold=True), "LABORATOIRE", (41, 91), WHITE)
@@ -129,8 +169,9 @@ def _draw_welcome(surface: pygame.Surface, elapsed: float, active: bool = False)
     status = pygame.Rect(798, 508, 362, 122)
     _panel(surface, status)
     _label(surface, _font(14), "ETAT DU TERMINAL", (819, 528), GREEN_DIM)
-    pygame.draw.circle(surface, GREEN, (828, 584), 5)
-    _label(surface, _font(22, bold=True), "SYSTEME EN VEILLE", (845, 570), WHITE)
+    pygame.draw.circle(surface, RED if active else GREEN, (828, 584), 5)
+    _label(surface, _font(22, bold=True), "SIGNAL INCONNU" if active else "SYSTEME EN VEILLE",
+           (845, 570), WHITE)
 
     pygame.draw.line(surface, LINE, (40, 659), (1160, 659))
     _label(surface, _font(14), "SIMULATION  /  DONNEES FICTIVES", (40, 684), AMBER)
@@ -138,14 +179,27 @@ def _draw_welcome(surface: pygame.Surface, elapsed: float, active: bool = False)
     _label(surface, _font(13), "FERMER : ECHAP OU BOUTON DE LA FENETRE", (40, 721), GREEN_DIM)
 
 
+def _draw_arrival_wait(surface: pygame.Surface, elapsed: float,
+                       arrival_seconds: float) -> None:
+    _draw_welcome(surface, elapsed, active=True)
+    box = pygame.Rect(40, 508, 738, 122)
+    pygame.draw.rect(surface, (33, 7, 12), box, border_radius=8)
+    pygame.draw.rect(surface, RED, box, 3, border_radius=8)
+    _label(surface, _font(20, bold=True), "SIGNAL INCONNU DETECTE", (62, 530), RED)
+    _label(surface, _font(18), "INTRUSION DANS", (62, 578), WHITE)
+    _label(surface, _font(38, bold=True), f"{math.ceil(arrival_seconds):02d} s",
+           (550, 553), RED)
+
+
 def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float,
-                     messages: tuple[str, ...], variant: str) -> None:
+                     messages: tuple[str, ...], variant: str,
+                     entity_portrait: pygame.Surface) -> None:
     # The original terminal remains visible beneath a slowly growing disturbance.
     progress = min(1, elapsed / duration)
     _draw_welcome(surface, elapsed, active=True)
     veil = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
     tension = variant == "Tension"
-    veil.fill((76, 12, 22, int((64 if tension else 42) * progress)))
+    veil.fill((17, 4, 17, int((112 if tension else 92) + 26 * progress)))
     surface.blit(veil, (0, 0))
 
     diagnostics = pygame.Rect(40, 244, 738, 386)
@@ -155,26 +209,15 @@ def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float,
     anomalies = (
         "CAPTEURS .......... SIGNAL INCONNU",
         "ARCHIVE ........... REPONSE IMPOSSIBLE",
-        "CHAMBRE 04 ........ PRESENCE DETECTEE",
+        "CHAMBRE 04 ........ DEMOGORGON DETECTE",
     )
     for index, line in enumerate(anomalies[: max(1, int(progress * 3) + 1)]):
         _label(surface, _font(17), line, (64, 330 + index * 49), RED)
 
-    if tension:
-        # A broad, slowly moving abstract presence in the signal chamber.
-        chamber = pygame.Surface((362, 244), pygame.SRCALPHA)
-        sway = 7 * math.sin(elapsed * 0.35)
-        spread = 115 * progress
-        left, right = [], []
-        for y in range(45, 211, 11):
-            contour = math.sin(math.pi * (y - 45) / 165) ** 0.55
-            ripple = 0.12 * math.sin(y * 0.095 + elapsed * 0.45)
-            left.append((181 + sway - spread * (contour + ripple), y))
-            right.append((181 + sway + spread * (contour - ripple), y))
-        outline = left + right[::-1]
-        pygame.draw.polygon(chamber, (54, 9, 19, int(215 * progress)), outline)
-        pygame.draw.lines(chamber, (203, 79, 82, int(230 * progress)), True, outline, 3)
-        surface.blit(chamber, (798, 244))
+    pygame.draw.rect(surface, PANEL, pygame.Rect(799, 245, 360, 40))
+    _label(surface, _font(16, True), "SIGNAL / DEMOGORGON", (819, 263), RED)
+    pygame.draw.rect(surface, RED_DIM, pygame.Rect(878, 286, 202, 202), 1)
+    _draw_entity_portrait(surface, entity_portrait, (882, 290), (194, 194), elapsed)
 
     # Interference grows steadily; no full-screen flashes or random jumps.
     for index in range(int(progress * (30 if tension else 9))):
@@ -207,10 +250,114 @@ def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float,
         box = pygame.Rect(40, 533, 738, 97)
         pygame.draw.rect(surface, PANEL, box, border_radius=7)
         pygame.draw.rect(surface, GREEN, box, 1, border_radius=7)
-        _label(surface, _font(22, bold=True), messages[-1], (62, 565), WHITE)
+        _draw_wrapped_text(surface, messages[-1], _font(22, bold=True),
+                           (62, 548), WHITE, 690, line_spacing=27)
+
+    # A short signal breach echoes the later Elf/entity clash, then dissolves
+    # into the slower possession. The raster noise continues at a lower level.
+    _draw_static_glitches(surface, elapsed, 0.38 + 0.85 * (1 - min(1.0, elapsed / 2.4)))
+    if elapsed < 2.4:
+        _draw_entry_breach(surface, elapsed)
+    _draw_red_arrival_flash(surface, elapsed)
 
 
-def _draw_elf(surface: pygame.Surface, elapsed: float, messages: tuple[str, ...]) -> None:
+def _draw_red_arrival_flash(surface: pygame.Surface, elapsed: float) -> None:
+    """One red impact pulse precisely at the start of the entity's arrival."""
+    flash_duration = 0.28
+    if elapsed >= flash_duration:
+        return
+    strength = 1.0 - elapsed / flash_duration
+    flash = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    flash.fill((170, 4, 16, int(118 * max(0.0, strength))))
+    surface.blit(flash, (0, 0))
+
+
+def _draw_static_glitches(surface: pygame.Surface, elapsed: float, intensity: float) -> None:
+    """Draw restrained CRT interference without full-screen flashing."""
+    beat = int(elapsed * 9)
+    noise = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    # Each short burst changes its pattern, avoiding a visibly repeating scan.
+    for index in range(13):
+        y = (beat * 47 + index * 89 + (index * beat * 13)) % HEIGHT
+        height = 1 + (index % 3)
+        alpha = int((18 + (index * 17 + beat * 11) % 43) * intensity)
+        color = (162, 67, 83, alpha) if index % 2 else (81, 191, 152, alpha)
+        left = (beat * (31 + index * 7) + index * 137) % 520
+        width = 110 + ((beat * 23 + index * 61) % 320)
+        pygame.draw.rect(noise, color, (left, y, width, height))
+
+    # Sparse pixel snow sits mostly over the terminal's darker surfaces.
+    for index in range(52):
+        x = (beat * 79 + index * 193 + index * index * 7) % WIDTH
+        y = (beat * 43 + index * 127 + index * index * 3) % HEIGHT
+        alpha = int((24 + (index * 19 + beat * 7) % 54) * intensity)
+        pygame.draw.rect(noise, (154, 194, 175, alpha), (x, y, 2, 2))
+    surface.blit(noise, (0, 0))
+
+
+def _draw_entry_breach(surface: pygame.Surface, elapsed: float) -> None:
+    """Briefly tear open the signal chart with the return-clash wave motif."""
+    strength = max(0.0, 1.0 - elapsed / 2.4)
+    center_x = 802 + int(338 * min(1.0, elapsed / 0.75))
+    center_y = 385 + int(13 * math.sin(elapsed * 11))
+    _draw_signal_strands(surface, 798, 9, 41, center_y, elapsed, amplitude=10, spacing=11)
+    for ring in range(3):
+        radius = 10 + ring * 18 + int((elapsed * 54) % 22)
+        alpha_surface = pygame.Surface((radius * 2 + 4, radius * 2 + 4), pygame.SRCALPHA)
+        pygame.draw.circle(alpha_surface, (*GREEN, int((150 - ring * 34) * strength)),
+                           (radius + 2, radius + 2), radius, 1)
+        surface.blit(alpha_surface, (center_x - radius - 2, center_y - radius - 2))
+
+
+def _draw_signal_strands(surface: pygame.Surface, start_x: int, step_x: int,
+                         count: int, center_y: int, elapsed: float,
+                         amplitude: int = 17, spacing: int = 13) -> None:
+    """Shared three-strand pulse used by both possession and the rematch."""
+    for strand in range(3):
+        points = []
+        for step in range(count):
+            x = start_x + step * step_x
+            y = center_y + strand * spacing + int(amplitude * math.sin(step * 0.48 + elapsed * 9 + strand))
+            points.append((x, y))
+        color = GREEN if strand != 1 else AMBER
+        pygame.draw.lines(surface, color, False, points, 3 if strand == 1 else 2)
+
+
+def _draw_return_clash(surface: pygame.Surface, elapsed: float,
+                       messages: tuple[str, ...], portrait: pygame.Surface,
+                       entity_portrait: pygame.Surface) -> None:
+    surface.fill((5, 4, 13))
+    _draw_grid(surface)
+    shade = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+    shade.fill((35, 3, 20, 130))
+    surface.blit(shade, (0, 0))
+    _label(surface, _font(22, True), "CONFLIT DE SIGNAL  //  REPRISE DU TERMINAL", (54, 42), RED)
+    pygame.draw.line(surface, RED_DIM, (54, 80), (1146, 80), 2)
+
+    left = pygame.Rect(62, 156, 345, 448)
+    right = pygame.Rect(793, 156, 345, 448)
+    pygame.draw.rect(surface, (9, 19, 25), left, border_radius=8)
+    pygame.draw.rect(surface, GREEN_DIM, left, 1, border_radius=8)
+    pygame.draw.rect(surface, (18, 5, 16), right, border_radius=8)
+    pygame.draw.rect(surface, RED_DIM, right, 1, border_radius=8)
+    _draw_elf_portrait(surface, portrait, (85, 228), (300, 250))
+    _label(surface, _font(18, True), "ELF  /  SIGNAL ALLIE", (88, 562), GREEN)
+
+    _draw_entity_portrait(surface, entity_portrait, (825, 210), (281, 281), elapsed + 0.3)
+    _label(surface, _font(18, True), "DEMOGORGON / SIGNAL HOSTILE", (819, 562), RED)
+
+    impact_x = 590 + int(96 * math.sin(elapsed * 5))
+    _draw_signal_strands(surface, 405, 9, 42, 358, elapsed)
+    pygame.draw.circle(surface, WHITE, (impact_x, 385), 9, 2)
+    pygame.draw.circle(surface, GREEN, (impact_x, 385), 22, 1)
+
+    y = 634
+    for line in messages:
+        y = _draw_wrapped_text(surface, line, _font(20, True), (420, y), WHITE, 690, 26) + 2
+
+
+def _draw_elf(surface: pygame.Surface, elapsed: float, messages: tuple[str, ...],
+               portrait: pygame.Surface) -> None:
     _draw_welcome(surface, elapsed, active=True)
     for branch in range(5):
         points = [(1198 - i * 13, 225 + branch * 83 + int(7 * math.sin(i * 0.5 + branch))) for i in range(10)]
@@ -220,21 +367,25 @@ def _draw_elf(surface: pygame.Surface, elapsed: float, messages: tuple[str, ...]
     pygame.draw.rect(surface, GREEN_DIM, panel, 1, border_radius=7)
     _label(surface, _font(18), "TRANSMISSION RETABLIE  /  ELF", (68, 272), GREEN)
     pygame.draw.line(surface, LINE, (68, 314), (1132, 314))
+    _draw_elf_portrait(surface, portrait, (78, 326), (270, 225))
+    y = 335
     for index, line in enumerate(messages):
-        _label(surface, _font(25 if index == 0 else 22, bold=index == 0), line, (69, 335 + index * 48), WHITE)
-    _label(surface, _font(15), "ENTREE POUR CONTINUER", (69, 583), AMBER)
+        font = _font(25 if index == 0 else 22, bold=index == 0)
+        y = _draw_wrapped_text(surface, line, font, (382, y), WHITE, 750, 30) + 8
+    _label(surface, _font(15), "ENTREE POUR CONTINUER", (382, min(y, 583)), AMBER)
 
 
 GAME_LABELS = {
-    "maze": ("1", "LABYRINTHE", "Vider le plateau  |  Fleches / WASD"),
-    "space_combat": ("2", "COMBAT SPATIAL", "Atteindre le score  |  Fleches / A D + Espace"),
-    "platformer": ("3", "PLATEFORMES", "Rejoindre la sortie  |  Fleches / WASD + Espace"),
+    "maze": ("1", "PAC-MAN", "Vider le plateau  |  Fleches / WASD"),
+    "space_combat": ("2", "SPACE INVADERS", "Atteindre le score  |  Fleches / A D + Espace"),
+    "platformer": ("3", "DONKEY KONG", "Rejoindre la sortie  |  Fleches / WASD + Espace"),
 }
 
 
 def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
                  remaining: float, warning: bool, test_mode: bool,
-                 free_mode: bool = False, games: GameSettings = GameSettings()) -> None:
+                 free_mode: bool = False, games: GameSettings = GameSettings(),
+                 portrait: pygame.Surface | None = None) -> None:
     _draw_welcome(surface, 0, active=True)
     panel = pygame.Rect(40, 244, 1120, 386)
     _panel(surface, panel)
@@ -257,9 +408,9 @@ def _draw_choice(surface: pygame.Surface, available_games: tuple[str, ...],
         _label(surface, _font(27, True), key, (69, y), AMBER)
         _label(surface, _font(23, True), name, (126, y), WHITE)
         _label(surface, _font(16), instruction, (128, y + 36), GREEN_DIM)
-    if not free_mode:
-        _draw_session_status(surface, remaining, warning, test_mode)
-    elif test_mode:
+    if portrait:
+        _draw_elf_portrait(surface, portrait, (866, 349), (240, 200))
+    if free_mode and test_mode:
         _draw_test_mode_badge(surface)
 
 
@@ -296,8 +447,8 @@ def _game_input(name: str, keys):
 
 
 def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
-               remaining: float, warning: bool, test_mode: bool,
-               timer_visible: bool, free_mode: bool, games: GameSettings = GameSettings()) -> None:
+               test_mode: bool,
+               free_mode: bool, games: GameSettings = GameSettings()) -> None:
     draw = {"maze": maze_window._draw, "space_combat": space_window._draw,
             "platformer": platform_window._draw}[name]
     if name == "maze":
@@ -320,10 +471,6 @@ def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
            "LABORATOIRE 1986  /  DEFI EN COURS", (42, 30), GREEN)
     _label(surface, _font(20, True), f"VIES {state.lives} / 3", (633, 27), WHITE)
     surface.blit(image, ((WIDTH - size[0]) // 2, 102 + (580 - size[1]) // 2))
-    if timer_visible:
-        minutes, seconds = divmod(math.ceil(remaining), 60)
-        _label(surface, _font(24, True), f"TEMPS {minutes:02}:{seconds:02}", (956, 24),
-               AMBER if warning else GREEN)
     instructions = {
         "maze": ("OBJECTIF : VIDER LE PLATEAU", "FLECHES / WASD : SE DEPLACER"),
         "space_combat": ("OBJECTIF : ATTEINDRE LE SCORE CIBLE", "FLECHES / A D : BOUGER   •   ESPACE : TIRER"),
@@ -353,82 +500,62 @@ def _tone(frequency: float, seconds: float, volume: float = 0.13) -> pygame.mixe
     return pygame.mixer.Sound(buffer=samples.tobytes())
 
 
-def _rumble(variant: str) -> pygame.mixer.Sound:
-    """Loopable, original low drone with a stronger but still gradual Tension mix."""
-    sample_rate = 44100
-    seconds = 4
-    volume = 0.12 if variant == "Mystère" else 0.32
-    samples = array("h")
-    for i in range(sample_rate * seconds):
-        t = i / sample_rate
-        swell = 0.82 + 0.18 * math.sin(2 * math.pi * 0.25 * t)
-        if variant == "Mystère":
-            value = (0.72 * math.sin(2 * math.pi * 48 * t) +
-                     0.28 * math.sin(2 * math.pi * 64 * t))
-        else:
-            # Midrange harmonics carry the drone on ordinary speakers.
-            value = (0.28 * math.sin(2 * math.pi * 48 * t) +
-                     0.30 * math.sin(2 * math.pi * 120 * t) +
-                     0.26 * math.sin(2 * math.pi * 180 * t) +
-                     0.16 * math.sin(2 * math.pi * 240 * t))
-        samples.append(int(32767 * volume * swell * value))
-    return pygame.mixer.Sound(buffer=samples.tobytes())
-
-
 def _draw_test_mode_badge(surface: pygame.Surface) -> None:
     _label(surface, _font(15, bold=True), "MODE TEST", (1045, 721), AMBER)
 
 
-def _draw_session_status(surface: pygame.Surface, remaining: float, warning: bool, test_mode: bool) -> None:
-    color = AMBER if warning else GREEN
-    pygame.draw.rect(surface, PANEL, pygame.Rect(792, 74, 367, 120), border_radius=7)
-    pygame.draw.rect(surface, color, pygame.Rect(792, 74, 367, 120), 1, border_radius=7)
-    _label(surface, _font(14), "TEMPS RESTANT", (811, 88), color)
+def _draw_countdown(surface: pygame.Surface, remaining: float, warning: bool) -> None:
+    timer_box = pygame.Rect(792, 7, 367, 86)
+    timer_color = (255, 56, 65) if warning else (255, 109, 80)
+    pygame.draw.rect(surface, (38, 10, 17), timer_box, border_radius=5)
+    pygame.draw.rect(surface, timer_color, timer_box, 2, border_radius=5)
+    _label(surface, _font(14, True), "TEMPS RESTANT", (811, 41), (255, 175, 168))
     minutes, seconds = divmod(math.ceil(remaining), 60)
-    _label(surface, _font(32, bold=True), f"{minutes:02}:{seconds:02}", (811, 113), WHITE)
-    if warning:
-        _label(surface, _font(14, bold=True), "FIN DE SESSION PROCHE", (811, 159), AMBER)
-    if test_mode:
-        _draw_test_mode_badge(surface)
+    _label(surface, _font(48, bold=True), f"{minutes:02}:{seconds:02}", (955, 20), timer_color)
 
 
-def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -> None:
+def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool,
+              portrait: pygame.Surface) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
     _label(surface, _font(44, bold=True), "SESSION TERMINEE", (350, 223), AMBER)
-    _label(surface, _font(24), "ELF // Le temps est ecoule. Rejoignez la salle suivante.", (205, 310), WHITE)
+    _draw_wrapped_text(surface, "ELF // Le temps est ecoule. Rejoignez la salle suivante.",
+                       _font(24), (205, 310), WHITE, 640, 30)
     _label(surface, _font(21), "Animateur : remettre le laboratoire a zero pour l'equipe suivante.", (171, 391), GREEN)
-    _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + BACKSPACE", (419, 474), GREEN_DIM)
+    _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + ESPACE", (419, 474), GREEN_DIM)
     if combined_alerts:
         _label(surface, _font(17, bold=True), "AVERTISSEMENT DE FIN EMIS", (445, 550), AMBER)
+    _draw_elf_portrait(surface, portrait, (865, 335), (250, 208))
     if test_mode:
         _draw_test_mode_badge(surface)
 
 
-def _draw_victory(surface: pygame.Surface, room_digit: int, test_mode: bool) -> None:
+def _draw_victory(surface: pygame.Surface, room_digit: int, test_mode: bool,
+                  portrait: pygame.Surface) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
     _label(surface, _font(24, True), "ELF // CONTROLE RETABLI", (381, 165), GREEN)
     _label(surface, _font(44, True), "DEFI REUSSI", (405, 225), WHITE)
     _label(surface, _font(38, True), f"CHIFFRE DE SALLE : {room_digit}", (352, 310), AMBER)
-    _label(surface, _font(21), "L'entite annonce son retour. Pour l'instant, jouez librement.",
-           (239, 400), GREEN)
+    _draw_wrapped_text(surface, "L'entite annonce son retour. Pour l'instant, jouez librement.",
+                       _font(21), (239, 400), GREEN, 590, 28)
     _label(surface, _font(18), "ENTREE POUR ACCEDER AUX TROIS JEUX", (391, 490), WHITE)
+    _draw_elf_portrait(surface, portrait, (858, 341), (260, 217))
     if test_mode:
         _draw_test_mode_badge(surface)
 
 
-def _draw_failure(surface: pygame.Surface, remaining: float, warning: bool,
-                  test_mode: bool) -> None:
+def _draw_failure(surface: pygame.Surface, test_mode: bool, portrait: pygame.Surface) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
     _label(surface, _font(23, bold=True), "ELF // JE SUIS REVENUE", (421, 171), GREEN)
     _label(surface, _font(44, bold=True), "DEFI ECHOUE", (395, 223), RED)
-    _label(surface, _font(24), "Les trois jeux sont perdus. Elf ne peut plus agir.", (262, 310), WHITE)
+    _draw_wrapped_text(surface, "Les trois jeux sont perdus. Elf ne peut plus agir.",
+                       _font(24), (262, 310), WHITE, 580, 30)
     _label(surface, _font(21), "Animateur : remettre le laboratoire a zero pour l'equipe suivante.",
            (171, 391), GREEN)
-    _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + BACKSPACE", (419, 474), GREEN_DIM)
-    _draw_session_status(surface, remaining, warning, test_mode)
+    _label(surface, _font(17), "CONTROLE + OPTION + COMMANDE + ESPACE", (419, 474), GREEN_DIM)
+    _draw_elf_portrait(surface, portrait, (866, 345), (250, 208))
 
 
 def _reset_matches(event: pygame.event.Event) -> bool:
@@ -436,6 +563,14 @@ def _reset_matches(event: pygame.event.Event) -> bool:
             and all(event.mod & MODIFIERS[name] for name in RESET_MODIFIERS)
             and not any(event.mod & flag for name, flag in MODIFIERS.items()
                         if name not in RESET_MODIFIERS))
+
+
+def _ordinary_key(event: pygame.event.Event) -> bool:
+    return (event.type == pygame.KEYDOWN
+            and not _reset_matches(event)
+            and event.key not in (pygame.K_ESCAPE, pygame.K_LCTRL, pygame.K_RCTRL,
+                                  pygame.K_LALT, pygame.K_RALT, pygame.K_LGUI,
+                                  pygame.K_RGUI, pygame.K_LSHIFT, pygame.K_RSHIFT))
 
 
 def run() -> None:
@@ -451,10 +586,15 @@ def run() -> None:
         flags = pygame.SCALED | pygame.FULLSCREEN if args.fullscreen else 0
         screen = pygame.display.set_mode((WIDTH, HEIGHT), flags)
         pygame.display.set_caption("Laboratoire 1986 | Terminal de surveillance")
+        portrait_path = Path(__file__).with_name("assets") / "elf-portrait.png"
+        portrait = pygame.image.load(portrait_path).convert_alpha()
+        entity_portrait_path = Path(__file__).with_name("assets") / "demogorgon-portrait.png"
+        entity_portrait = pygame.image.load(entity_portrait_path).convert_alpha()
         clock = pygame.time.Clock()
         scale = 0.1 if args.test_mode else 1.0
         session = Session(config.session_seconds * scale, config.possession_seconds * scale,
-                          config.warning_seconds * scale, config.room_digit)
+                          config.warning_seconds * scale, config.room_digit,
+                          signal_seconds=10 * scale)
         started_at = pygame.time.get_ticks()
         previous_tick = started_at
         previous_phase = Phase.LABORATOIRE
@@ -468,10 +608,10 @@ def run() -> None:
         combined_alerts = False
         sounds = None
         contact_sound = None
-        drone_channel = None
+        soundtrack = None
         if pygame.mixer.get_init():
             sounds = {Phase.ELF: _tone(659, 0.7)}
-            drone = _rumble(config.variant)
+            soundtrack = Soundtrack(config.variant)
             contact_sound = _tone(493, 0.45)
             warning_sound = _tone(440, 0.7)
             alarm_sound = _tone(220, 1.4, 0.18)
@@ -485,10 +625,12 @@ def run() -> None:
                     running = False
                 elif _reset_matches(event):
                     action = "reinitialiser"
-                elif config.matches(event) and action != "reinitialiser":
-                    action = "declencher_mystere"
                 elif event.type == pygame.KEYDOWN and action != "reinitialiser":
-                    if previous_state.phase in (Phase.ELF, Phase.VICTOIRE) and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    if (previous_state.phase is Phase.LABORATOIRE
+                            and previous_state.remaining_seconds is None
+                            and _ordinary_key(event)):
+                        action = "declencher_mystere"
+                    elif previous_state.phase in (Phase.ELF, Phase.VICTOIRE) and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                         action = "continuer"
                     elif previous_state.phase in (Phase.CHOIX, Phase.LIBRE):
                         selected = {pygame.K_1: "maze", pygame.K_KP1: "maze",
@@ -530,12 +672,6 @@ def run() -> None:
                 sounds[state.phase].play()
             if state.phase != previous_phase:
                 phase_started_at = now
-            if state.phase != previous_phase and pygame.mixer.get_init():
-                if state.phase is Phase.POSSESSION:
-                    drone_channel = drone.play(loops=-1, fade_ms=700)
-                elif drone_channel:
-                    drone_channel.fadeout(400)
-                    drone_channel = None
             if (state.phase is Phase.POSSESSION and any("ELF" in line for line in state.messages)
                     and not had_contact):
                 had_contact = True
@@ -543,6 +679,13 @@ def run() -> None:
                     contact_sound.play()
             previous_phase = state.phase
             previous_state = state
+            if soundtrack:
+                scene = None
+                if state.phase is Phase.POSSESSION:
+                    scene = "return" if state.return_takeover else "entity"
+                elif state.phase is Phase.JEU:
+                    scene = f"game:{state.active_game}"
+                soundtrack.set_scene(scene)
             if state.phase in (Phase.CHOIX, Phase.LIBRE, Phase.VICTOIRE, Phase.FIN):
                 game = None
                 game_name = None
@@ -556,29 +699,37 @@ def run() -> None:
                     game.advance(game_delta, _game_input(state.active_game, pygame.key.get_pressed()))
                     game_time += game_delta
             if state.phase is Phase.LABORATOIRE:
-                _draw_welcome(screen, elapsed)
+                if state.arrival_seconds is not None:
+                    _draw_arrival_wait(screen, elapsed, state.arrival_seconds)
+                else:
+                    _draw_welcome(screen, elapsed)
             elif state.phase is Phase.POSSESSION:
-                _draw_possession(screen, (now - phase_started_at) / 1000,
-                                 session.possession_seconds, state.messages, config.variant)
+                phase_elapsed = (now - phase_started_at) / 1000
+                if state.return_takeover:
+                    _draw_return_clash(screen, phase_elapsed, state.messages,
+                                       portrait, entity_portrait)
+                else:
+                    _draw_possession(screen, phase_elapsed, session.possession_seconds,
+                                     state.messages, config.variant, entity_portrait)
             elif state.phase is Phase.ELF:
-                _draw_elf(screen, elapsed, state.messages)
+                _draw_elf(screen, elapsed, state.messages, portrait)
             elif state.phase in (Phase.CHOIX, Phase.LIBRE):
                 _draw_choice(screen, state.available_games, state.remaining_seconds,
-                             warning_active, args.test_mode, state.free_mode, config.games)
+                             warning_active, args.test_mode, state.free_mode, config.games,
+                             portrait)
             elif state.phase in (Phase.JEU, Phase.RESULTAT):
                 _draw_game(screen, state.active_game, game.state, game_time,
-                           state.remaining_seconds, warning_active, args.test_mode,
-                           state.timer_visible, state.free_mode, config.games)
+                           args.test_mode, state.free_mode, config.games)
             elif state.phase is Phase.VICTOIRE:
-                _draw_victory(screen, config.room_digit, args.test_mode)
+                _draw_victory(screen, config.room_digit, args.test_mode, portrait)
             elif state.phase is Phase.FIN:
-                _draw_end(screen, args.test_mode, combined_alerts)
+                _draw_end(screen, args.test_mode, combined_alerts, portrait)
             elif state.phase is Phase.ECHEC:
-                _draw_failure(screen, state.remaining_seconds, warning_active, args.test_mode)
+                _draw_failure(screen, args.test_mode, portrait)
             else:
                 raise AssertionError(f"Phase sans écran : {state.phase}")
-            if state.phase in (Phase.POSSESSION, Phase.ELF):
-                _draw_session_status(screen, state.remaining_seconds, warning_active, args.test_mode)
+            if state.timer_visible and state.remaining_seconds is not None:
+                _draw_countdown(screen, state.remaining_seconds, warning_active)
             elif state.phase is Phase.LABORATOIRE and args.test_mode:
                 _draw_test_mode_badge(screen)
             pygame.display.flip()

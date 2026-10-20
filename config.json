@@ -23,9 +23,5 @@
       "fire_speed_px_per_second": 26
     }
   },
-  "variant": "Mystère",
-  "trigger": {
-    "key": "space",
-    "modifiers": ["ctrl", "alt", "meta"]
-  }
+  "variant": "Mystère"
 }

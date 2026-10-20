@@ -12,8 +12,7 @@ from retro_gaming.session import Phase, Session
 class TriggerConfigurationTest(unittest.TestCase):
     def test_optional_game_numbers_load_and_invalid_values_explain_the_field(self):
         base = {"session_seconds": 300, "possession_seconds": 12,
-                "warning_seconds": 60, "variant": "Mystère",
-                "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "meta"]}}
+                "warning_seconds": 60, "variant": "Mystère"}
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.json"
             path.write_text(json.dumps(base), encoding="utf-8")
@@ -52,7 +51,6 @@ class TriggerConfigurationTest(unittest.TestCase):
     def test_room_digit_loads_and_rejects_invalid_values(self):
         data = {"session_seconds": 30, "possession_seconds": 2,
                 "warning_seconds": 5, "variant": "Mystère",
-                "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "meta"]},
                 "room_digit": 8}
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.json"
@@ -69,7 +67,6 @@ class TriggerConfigurationTest(unittest.TestCase):
             "session_seconds": 30,
             "possession_seconds": 8,
             "warning_seconds": 10,
-            "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "meta"]},
         }
         journeys = []
         with tempfile.TemporaryDirectory() as directory:
@@ -123,7 +120,6 @@ class TriggerConfigurationTest(unittest.TestCase):
             "session_seconds": 300,
             "possession_seconds": 12,
             "warning_seconds": 60,
-            "trigger": {"key": "space", "modifiers": ["ctrl", "alt", "meta"]},
         }
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.json"
@@ -148,21 +144,16 @@ class TriggerConfigurationTest(unittest.TestCase):
     def tearDownClass(cls):
         pygame.quit()
 
-    def test_trigger_cannot_reuse_animator_reset_shortcut(self):
+    def test_obsolete_trigger_is_rejected(self):
         data = {
             "session_seconds": 300,
             "possession_seconds": 12,
             "warning_seconds": 60,
             "variant": "Mystère",
-            "trigger": {"key": "backspace", "modifiers": ["meta", "ctrl", "alt"]},
+            "trigger": {"key": "space", "modifiers": ["meta", "ctrl", "alt"]},
         }
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.json"
             path.write_text(json.dumps(data), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "remise à zéro"):
+            with self.assertRaisesRegex(ValueError, "trigger n'est plus configurable"):
                 load_config(path)
-
-            data["trigger"]["modifiers"].append("shift")
-            path.write_text(json.dumps(data), encoding="utf-8")
-            config = load_config(path)
-            self.assertEqual(config.trigger_modifiers, ("meta", "ctrl", "alt", "shift"))

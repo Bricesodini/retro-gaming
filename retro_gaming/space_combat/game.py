@@ -27,12 +27,25 @@ class PlayerInput:
 class Enemy:
     x: float
     y: float
+    kind: int = 1
+
+    @property
+    def points(self) -> int:
+        return (30, 20, 10)[self.kind]
 
 
 @dataclass(frozen=True)
 class Shot:
     x: float
     y: float
+
+
+@dataclass(frozen=True)
+class Explosion:
+    x: float
+    y: float
+    age: float = 0.0
+    points: int = 0
 
 
 @dataclass(frozen=True)
@@ -59,11 +72,14 @@ class GameState:
     wave: int = 1
     score_target: int = DEFAULT_SCORE_TARGET
     respawn_seconds: float = 0.0
+    explosions: tuple[Explosion, ...] = ()
 
 
 def _formation() -> tuple[Enemy, ...]:
-    return tuple(Enemy(240 + col * 120, 100 + row * 54)
-                 for row in range(2) for col in range(5))
+    # Classic score table: 11 columns, with red / blue / yellow rows.
+    return tuple(Enemy(150 + col * 66, 72 + row * 42,
+                       0 if row == 0 else 1 if row < 3 else 2)
+                 for row in range(5) for col in range(11))
 
 
 class Game:
@@ -139,12 +155,10 @@ class Game:
         delta_x = self._enemy_direction * (self._enemy_speed_px_per_second + (state.wave - 1) * 12) * seconds
         left = min(e.x for e in enemies) + delta_x - ENEMY_HALF_WIDTH
         right = max(e.x for e in enemies) + delta_x + ENEMY_HALF_WIDTH
-        descent = 0
         if left < 20 or right > state.width - 20:
             self._enemy_direction *= -1
             delta_x += 2 * (20 - left) if left < 20 else -2 * (right - (state.width - 20))
-            descent = 28
-        enemies = [Enemy(e.x + delta_x, e.y + descent) for e in enemies]
+        enemies = [Enemy(e.x + delta_x, e.y, e.kind) for e in enemies]
 
         enemy_shots = list(state.enemy_shots)
         self._salvo_elapsed += seconds
@@ -152,7 +166,7 @@ class Game:
             self._salvo_elapsed = 0
             # Only the lowest invader in a column fires; three columns per salvo.
             columns = sorted({round(e.x, 4) for e in enemies})
-            for column in columns[self._salvo_number % 2::2]:
+            for column in columns[self._salvo_number % 4::4]:
                 shooter = max((e for e in enemies if round(e.x, 4) == column), key=lambda e: e.y)
                 enemy_shots.append(Shot(shooter.x, shooter.y + 18))
             self._salvo_number += 1
@@ -171,6 +185,9 @@ class Game:
             return True
 
         surviving_shots = []
+        explosions = [replace(explosion, age=explosion.age + seconds)
+                      for explosion in state.explosions
+                      if explosion.age + seconds < 0.36]
         score = state.score
         for shot in shots:
             y = shot.y - 760 * seconds
@@ -179,9 +196,10 @@ class Game:
             hits = [(i, e) for i, e in enumerate(enemies) if abs(shot.x - e.x) <= ENEMY_HALF_WIDTH
                     and y <= e.y + ENEMY_HALF_HEIGHT and shot.y >= e.y - ENEMY_HALF_HEIGHT]
             if hits:
-                i, _ = max(hits, key=lambda pair: pair[1].y)
+                i, enemy = max(hits, key=lambda pair: pair[1].y)
                 enemies.pop(i)
-                score += 100
+                explosions.append(Explosion(enemy.x, enemy.y, points=enemy.points))
+                score += enemy.points
             elif y >= 0:
                 surviving_shots.append(Shot(shot.x, y))
         incoming = []
@@ -194,10 +212,9 @@ class Game:
                 contact = True
             elif y < state.height:
                 incoming.append(Shot(shot.x, y))
-        # A descending formation erodes bunkers too, so it never hides inside them.
-        blocks = [b for b in blocks if not any(abs(e.x - b.x) < 28 and abs(e.y - b.y) < 20 for e in enemies)]
         invasion = any(e.y + ENEMY_HALF_HEIGHT >= state.player_y - 24 for e in enemies)
         state = replace(state, player_x=x, enemies=tuple(enemies), shots=tuple(surviving_shots),
+                        explosions=tuple(explosions),
                         enemy_shots=tuple(incoming), shelters=tuple(blocks), score=score)
         if score >= state.score_target:
             state = replace(state, result=Result.VICTORY)
