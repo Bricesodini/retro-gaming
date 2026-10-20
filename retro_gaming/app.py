@@ -379,13 +379,12 @@ def _draw_end(surface: pygame.Surface, test_mode: bool, combined_alerts: bool) -
         _draw_test_mode_badge(surface)
 
 
-def _draw_victory(surface: pygame.Surface, messages: tuple[str, ...],
-                  test_mode: bool) -> None:
+def _draw_victory(surface: pygame.Surface, room_digit: int, test_mode: bool) -> None:
     surface.fill(BACKGROUND)
     _draw_grid(surface)
     _label(surface, _font(24, True), "ELF // CONTROLE RETABLI", (381, 165), GREEN)
     _label(surface, _font(44, True), "DEFI REUSSI", (405, 225), WHITE)
-    _label(surface, _font(38, True), messages[1], (352, 310), AMBER)
+    _label(surface, _font(38, True), f"CHIFFRE DE SALLE : {room_digit}", (352, 310), AMBER)
     _label(surface, _font(21), "L'entite annonce son retour. Pour l'instant, jouez librement.",
            (239, 400), GREEN)
     _label(surface, _font(18), "ENTREE POUR ACCEDER AUX TROIS JEUX", (391, 490), WHITE)
@@ -542,7 +541,7 @@ def run() -> None:
                            state.remaining_seconds, warning_active, args.test_mode,
                            state.timer_visible, state.free_mode)
             elif state.phase is Phase.VICTOIRE:
-                _draw_victory(screen, state.messages, args.test_mode)
+                _draw_victory(screen, config.room_digit, args.test_mode)
             elif state.phase is Phase.FIN:
                 _draw_end(screen, args.test_mode, combined_alerts)
             elif state.phase is Phase.ECHEC:
