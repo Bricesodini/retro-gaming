@@ -1,6 +1,6 @@
-# Laboratoire 1986 — POC Mystère / Tension
+# Laboratoire 1986 — borne arcade
 
-Une fenêtre Pygame CE présente le terminal de laboratoire pendant l'introduction. L'animateur choisit Mystère ou Tension dans la configuration, puis déclenche discrètement la possession. Les diagnostics se dérèglent, des interférences et des racines apparaissent progressivement, puis Elf prend contact et annonce un défi. Tension amplifie les déformations, ajoute une silhouette abstraite dans la chambre du signal et rend le grondement plus présent. La trame et les messages sont identiques. Le parcours POC s'arrête à l'annonce ; les trois jeux se lancent séparément.
+Une fenêtre Pygame CE présente le terminal de laboratoire pendant l'introduction. L'animateur choisit Mystère ou Tension dans la configuration, puis déclenche discrètement la possession. Les diagnostics se dérèglent, des interférences et des racines apparaissent progressivement, puis Elf prend contact et annonce un défi. Tension amplifie les déformations, ajoute une silhouette abstraite dans la chambre du signal et rend le grondement plus présent. La trame et les messages sont identiques. L'entité adresse maintenant son propre message ; Elf demande l'aide de l'équipe, qui choisit ensuite l'un des trois jeux dans cette même fenêtre. Les lanceurs autonomes restent disponibles.
 
 ## Versions et installation
 
@@ -23,7 +23,7 @@ Ces versions ont été installées et essayées sur macOS Apple Silicon, la plat
 .venv/bin/python -m retro_gaming
 ```
 
-L'accueil affiche des diagnostics autonomes, sans temps actif. Avec la fenêtre au premier plan, appuyer sur **Contrôle + Option + Commande + Espace** sur Mac pour commencer. Le chronomètre de session démarre alors, y compris pendant les douze secondes initiales de possession. Un appui prolongé ou répété ne relance rien. Elf apparaît ensuite avec un texte qui reste affiché. Le temps restant est affiché pendant la session. À 60 secondes de la fin par défaut, un avertissement visuel et sonore apparaît une seule fois. À expiration, une alarme retentit une seule fois et un écran de fin attend l’animateur. **Contrôle + Option + Commande + Retour arrière (Backspace)** réinitialise depuis toute phase : le laboratoire revient avec un chronomètre neuf et les sons précédents sont arrêtés. Ce geste est distinct du déclenchement. Fermer avec **Échap** ou le bouton de la fenêtre.
+L'accueil affiche des diagnostics autonomes, sans temps actif. Avec la fenêtre au premier plan, appuyer sur **Contrôle + Option + Commande + Espace** sur Mac pour commencer. Le chronomètre de session démarre alors, y compris pendant les douze secondes initiales de possession. Un appui prolongé ou répété ne relance rien. Elf apparaît ensuite, explique la possession et demande de l'aide. Appuyer sur **Entrée** pour afficher le choix persistant, puis sur **1** pour le labyrinthe, **2** pour le combat spatial ou **3** pour les plateformes. Les consignes et les vies restent visibles pendant la partie. Son résultat reste affiché dans la borne ; la suite du défi après ce résultat sera reliée par l'issue #12. Le temps restant est affiché pendant les scènes, le choix et la partie. À 60 secondes de la fin par défaut, un avertissement visuel et sonore apparaît une seule fois. À expiration, une alarme retentit une seule fois et un écran de fin attend l’animateur. **Contrôle + Option + Commande + Retour arrière (Backspace)** réinitialise depuis toute phase : le laboratoire revient avec un chronomètre neuf et les sons précédents sont arrêtés. Ce geste est distinct du déclenchement. Fermer avec **Échap** ou le bouton de la fenêtre.
 
 Les effets visuels, le grondement et les sons brefs, dont l’avertissement et l’alarme, sont produits par le code. Les mouvements sont progressifs, sans flash rapide ni sursaut brutal. Il n'y a ni voix, ni ROM, ni média extrait de la série.
 
@@ -41,7 +41,7 @@ La victoire arrive au score cible, réglable avant la manche :
 .venv/bin/python -m retro_gaming.space_combat --score-target 3000
 ```
 
-La valeur initiale de 3 000 points et les cadences restent à calibrer en conditions d'animation. Le score se conserve entre les vagues et les vies. Les abris restent endommagés ; une invasion replace la formation en haut. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce jeu est indépendant du parcours POC.
+La valeur initiale de 3 000 points et les cadences restent à calibrer en conditions d'animation. Le score se conserve entre les vagues et les vies. Les abris restent endommagés ; une invasion replace la formation en haut. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce lanceur autonome reste disponible.
 
 ## Jouer au labyrinthe
 
@@ -51,7 +51,7 @@ La valeur initiale de 3 000 points et les cadences restent à calibrer en condit
 
 Déplacer le personnage jaune avec les flèches ou **WASD** pour vider le plateau. Les murs bloquent le passage. Quatre fantômes poursuivent, anticipent, alternent entre chasse et détour, ou explorent les coins du labyrinthe. Une pastille vaut 10 points ; une super-pastille vaut 50 points et rend les fantômes vulnérables pendant six secondes. Manger un fantôme ajoute 200 points ; il revient après deux secondes.
 
-Le contact avec un fantôme en chasse coûte une des **trois vies**. Le joueur et les fantômes repartent à leurs positions initiales après une courte pause ; les pastilles déjà collectées et le score restent acquis. Ramasser toutes les pastilles et super-pastilles gagne. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Le labyrinthe se lance séparément du parcours POC.
+Le contact avec un fantôme en chasse coûte une des **trois vies**. Le joueur et les fantômes repartent à leurs positions initiales après une courte pause ; les pastilles déjà collectées et le score restent acquis. Ramasser toutes les pastilles et super-pastilles gagne. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Le lanceur autonome du labyrinthe reste disponible.
 
 ## Jouer au jeu de plateformes
 
@@ -61,9 +61,9 @@ Le contact avec un fantôme en chasse coûte une des **trois vies**. Le joueur e
 
 Déplacer le personnage à gauche et à droite avec les flèches ou **A/D**. Monter et descendre les échelles avec **↑/↓** ou **W/S** ; **Espace** fait sauter. Parcourir les passerelles inclinées en zigzag jusqu'à la princesse au sommet. Un grand singe original prépare puis lance ses barriques : elles roulent, tombent aux extrémités et certaines empruntent les échelles. Leur cadence et leur vitesse augmentent pendant l'ascension. Deux ennemis de feu sont actifs dès le départ ; ils poursuivent le joueur et changent d'étage par les échelles. Le brasier du bas en fait apparaître un autre après quatorze secondes, jusqu'à trois ; le brasier lui-même est dangereux au contact. Cinq échelles placées uniquement aux extrémités imposent une montée en zigzag sur six poutrelles. Une dernière échelle au bord droit mène à la terrasse de la princesse, au-dessus du singe. Les pentes alternent : les barriques descendent à la rencontre du joueur, accélèrent dans la pente et chutent sous la gravité en bout de passerelle. Une seule barrique est déjà en circulation au début de la manche. Les lancers commencent à 4 secondes d’intervalle et restent espacés d’au moins 3,2 secondes au sommet ; les barriques partent à 85 pixels par seconde et leur vitesse est plafonnée à 125 pixels par seconde. Les flammes avancent plus lentement. Le saut est assez court pour franchir les dangers sans sauter un étage. Les poses de marche, de grimpe et de saut du personnage, ainsi que le lancer du singe et la rotation des barriques, suivent l'état réel du jeu.
 
-Une collision ou une chute coûte une des **trois vies** et ramène au départ avec une courte pause. Atteindre la princesse gagne la manche. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce jeu se lance indépendamment du parcours POC, du combat spatial et du labyrinthe.
+Une collision ou une chute coûte une des **trois vies** et ramène au départ avec une courte pause. Atteindre la princesse gagne la manche. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Le lanceur autonome des plateformes reste disponible.
 
-Dans les trois jeux, une manche contient trois vies. Les trois tentatives prévues pour le défi de l'animation restent distinctes : une tentative correspond à une manche. Les lanceurs autonomes ne modifient pas la session POC.
+Dans les trois jeux, une manche contient trois vies. Le jeu choisi dans la borne consomme le temps global ; les lanceurs autonomes ne modifient pas sa session.
 
 ## Configuration
 
@@ -97,7 +97,7 @@ Pour parcourir la session plus vite, lancer :
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-Les tests de session contrôlent le temps sans attendre : accueil inactif, déclenchement unique, ordre possession puis Elf, temps consommé pendant la possession et messages persistants, seuils d’avertissement et d’alarme, traversée des deux seuils en une avancée, expiration dans les deux phases, remise à zéro et second cycle.
+Les tests de session contrôlent le temps sans attendre : accueil inactif, déclenchement unique, ordre possession puis Elf, temps consommé pendant la possession et messages persistants, seuils d’avertissement et d’alarme, traversée des deux seuils en une avancée, expiration pendant les scènes et la partie, résultat du jeu, remise à zéro et second cycle.
 
 Les tests des trois jeux passent par `Game.advance(temps, entrées) -> GameState`, sans fenêtre. Ils couvrent vies et réapparitions, résultats persistants, murs et collecte, super-pastilles et retour des quatre fantômes, tirs ennemis et joueur, abris, score et vagues, passerelles inclinées, saut et échelles, trajectoires des barriques et pression pendant l'ascension. Des scénarios à temps découpé différemment vérifient aussi collisions, transitions et commandes brèves.
 

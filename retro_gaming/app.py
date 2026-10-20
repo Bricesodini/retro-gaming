@@ -10,6 +10,9 @@ import pygame
 
 from retro_gaming.config import MODIFIERS, RESET_KEY, RESET_MODIFIERS, load_config
 from retro_gaming.session import Phase, Session
+from retro_gaming.maze import game as maze_game, window as maze_window
+from retro_gaming.space_combat import game as space_game, window as space_window
+from retro_gaming.platformer import game as platform_game, window as platform_window
 
 
 WIDTH = 1200
@@ -204,7 +207,7 @@ def _draw_possession(surface: pygame.Surface, elapsed: float, duration: float,
         box = pygame.Rect(40, 533, 738, 97)
         pygame.draw.rect(surface, PANEL, box, border_radius=7)
         pygame.draw.rect(surface, GREEN, box, 1, border_radius=7)
-        _label(surface, _font(24, bold=True), messages[0], (62, 565), WHITE)
+        _label(surface, _font(22, bold=True), messages[-1], (62, 565), WHITE)
 
 
 def _draw_elf(surface: pygame.Surface, elapsed: float, messages: tuple[str, ...]) -> None:
@@ -218,8 +221,84 @@ def _draw_elf(surface: pygame.Surface, elapsed: float, messages: tuple[str, ...]
     _label(surface, _font(18), "TRANSMISSION RETABLIE  /  ELF", (68, 272), GREEN)
     pygame.draw.line(surface, LINE, (68, 314), (1132, 314))
     for index, line in enumerate(messages):
-        _label(surface, _font(25 if index == 0 else 22, bold=index == 0), line, (69, 348 + index * 68), WHITE)
-    _label(surface, _font(15), "ANNONCE DU DEFI  /  EN ATTENTE DE LA SUITE", (69, 573), AMBER)
+        _label(surface, _font(25 if index == 0 else 22, bold=index == 0), line, (69, 335 + index * 48), WHITE)
+    _label(surface, _font(15), "ELF DEMANDE VOTRE AIDE  /  ENTREE POUR CHOISIR", (69, 583), AMBER)
+
+
+GAME_LABELS = {
+    "maze": ("1", "LABYRINTHE", "Vider le plateau  |  Fleches / WASD"),
+    "space_combat": ("2", "COMBAT SPATIAL", "Atteindre le score  |  Fleches / A D + Espace"),
+    "platformer": ("3", "PLATEFORMES", "Rejoindre la sortie  |  Fleches / WASD + Espace"),
+}
+
+
+def _draw_choice(surface: pygame.Surface, remaining: float, warning: bool, test_mode: bool) -> None:
+    _draw_welcome(surface, 0, active=True)
+    panel = pygame.Rect(40, 244, 1120, 386)
+    _panel(surface, panel)
+    _label(surface, _font(25, True), "ELF // J'AI BESOIN DE VOUS", (68, 267), WHITE)
+    _label(surface, _font(17), "Choisissez un jeu. Trois vies pour relever le defi.", (68, 307), GREEN)
+    for index, (key, name, instruction) in enumerate(GAME_LABELS.values()):
+        y = 359 + index * 82
+        pygame.draw.line(surface, LINE, (68, y - 13), (1130, y - 13))
+        _label(surface, _font(27, True), key, (69, y), AMBER)
+        _label(surface, _font(23, True), name, (126, y), WHITE)
+        _label(surface, _font(16), instruction, (128, y + 36), GREEN_DIM)
+    _draw_session_status(surface, remaining, warning, test_mode)
+
+
+def _new_game(name: str):
+    return {"maze": maze_game.Game, "space_combat": space_game.Game,
+            "platformer": platform_game.Game}[name]()
+
+
+def _game_input(name: str, keys):
+    left = keys[pygame.K_LEFT] or keys[pygame.K_a]
+    right = keys[pygame.K_RIGHT] or keys[pygame.K_d]
+    if name == "space_combat":
+        return space_game.PlayerInput(left=left, right=right, shoot=keys[pygame.K_SPACE])
+    up = keys[pygame.K_UP] or keys[pygame.K_w]
+    down = keys[pygame.K_DOWN] or keys[pygame.K_s]
+    if name == "maze":
+        return maze_game.PlayerInput(up=up, down=down, left=left, right=right)
+    return platform_game.PlayerInput(left=left, right=right, up=up, down=down,
+                                     jump=keys[pygame.K_SPACE])
+
+
+def _draw_game(surface: pygame.Surface, name: str, state, elapsed: float,
+               remaining: float, warning: bool, test_mode: bool) -> None:
+    draw = {"maze": maze_window._draw, "space_combat": space_window._draw,
+            "platformer": platform_window._draw}[name]
+    if name == "maze":
+        width = len(state.rows[0]) * maze_window.CELL
+        height = len(state.rows) * maze_window.CELL + maze_window.HEADER + maze_window.FOOTER
+    elif name == "space_combat":
+        width, height = state.width, state.height
+    else:
+        width = state.level.width
+        height = state.level.height + platform_window.HEADER + platform_window.FOOTER
+    canvas = pygame.Surface((width, height))
+    draw(canvas, state, _font(32, True), _font(16), elapsed)
+    scale = min(1120 / width, 580 / height)
+    size = (round(width * scale), round(height * scale))
+    image = pygame.transform.smoothscale(canvas, size)
+    surface.fill(BACKGROUND)
+    _draw_grid(surface)
+    _label(surface, _font(17, True), "LABORATOIRE 1986  /  DEFI EN COURS", (42, 30), GREEN)
+    _label(surface, _font(20, True), f"VIES {state.lives} / 3", (633, 27), WHITE)
+    surface.blit(image, ((WIDTH - size[0]) // 2, 102 + (580 - size[1]) // 2))
+    minutes, seconds = divmod(math.ceil(remaining), 60)
+    _label(surface, _font(24, True), f"TEMPS {minutes:02}:{seconds:02}", (956, 24),
+           AMBER if warning else GREEN)
+    instructions = {
+        "maze": ("OBJECTIF : VIDER LE PLATEAU", "FLECHES / WASD : SE DEPLACER"),
+        "space_combat": ("OBJECTIF : ATTEINDRE LE SCORE CIBLE", "FLECHES / A D : BOUGER   •   ESPACE : TIRER"),
+        "platformer": ("OBJECTIF : REJOINDRE LA PRINCESSE", "FLECHES / WASD : BOUGER / GRIMPER   •   ESPACE : SAUTER"),
+    }[name]
+    _label(surface, _font(17, True), instructions[0], (42, 690), WHITE)
+    _label(surface, _font(15), instructions[1], (42, 722), GREEN)
+    if test_mode:
+        _draw_test_mode_badge(surface)
 
 
 def _tone(frequency: float, seconds: float, volume: float = 0.13) -> pygame.mixer.Sound:
@@ -311,6 +390,9 @@ def run() -> None:
         started_at = pygame.time.get_ticks()
         previous_tick = started_at
         previous_phase = Phase.LABORATOIRE
+        previous_state = session.advance(0, None)
+        game = None
+        game_time = 0.0
         had_contact = False
         warning_active = False
         combined_alerts = False
@@ -335,14 +417,27 @@ def run() -> None:
                     action = "reinitialiser"
                 elif config.matches(event) and action != "reinitialiser":
                     action = "declencher_mystere"
+                elif event.type == pygame.KEYDOWN and action != "reinitialiser":
+                    if previous_state.phase is Phase.ELF and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                        action = "continuer"
+                    elif previous_state.phase is Phase.CHOIX:
+                        selected = {pygame.K_1: "maze", pygame.K_KP1: "maze",
+                                    pygame.K_2: "space_combat", pygame.K_KP2: "space_combat",
+                                    pygame.K_3: "platformer", pygame.K_KP3: "platformer"}.get(event.key)
+                        if selected:
+                            action = f"choisir_{selected}"
             if not running:
                 break
             now = pygame.time.get_ticks()
             elapsed = (now - started_at) / 1000
             delta = (now - previous_tick) / 1000
             previous_tick = now
-            state = session.advance(delta, action)
+            reported_result = (game.state.result.value if game is not None and
+                               game.state.result.value != "playing" else None)
+            state = session.advance(delta, action, reported_result)
             if action == "reinitialiser":
+                game = None
+                game_time = 0.0
                 if pygame.mixer.get_init():
                     pygame.mixer.stop()
                 had_contact = False
@@ -367,11 +462,20 @@ def run() -> None:
                 elif drone_channel:
                     drone_channel.fadeout(400)
                     drone_channel = None
-            if state.phase is Phase.POSSESSION and state.messages and not had_contact:
+            if (state.phase is Phase.POSSESSION and any("ELF" in line for line in state.messages)
+                    and not had_contact):
                 had_contact = True
                 if contact_sound:
                     contact_sound.play()
             previous_phase = state.phase
+            previous_state = state
+            if state.phase is Phase.JEU:
+                if game is None:
+                    game = _new_game(state.active_game)
+                    game_time = 0.0
+                else:
+                    game.advance(delta, _game_input(state.active_game, pygame.key.get_pressed()))
+                    game_time += delta
             if state.phase is Phase.LABORATOIRE:
                 _draw_welcome(screen, elapsed)
             elif state.phase is Phase.POSSESSION:
@@ -379,6 +483,11 @@ def run() -> None:
                                  session.possession_seconds, state.messages, config.variant)
             elif state.phase is Phase.ELF:
                 _draw_elf(screen, elapsed, state.messages)
+            elif state.phase is Phase.CHOIX:
+                _draw_choice(screen, state.remaining_seconds, warning_active, args.test_mode)
+            elif state.phase in (Phase.JEU, Phase.RESULTAT):
+                _draw_game(screen, state.active_game, game.state, game_time,
+                           state.remaining_seconds, warning_active, args.test_mode)
             elif state.phase is Phase.FIN:
                 _draw_end(screen, args.test_mode, combined_alerts)
             else:
