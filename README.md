@@ -33,7 +33,15 @@ Les effets visuels, le grondement et les sons brefs, dont l’avertissement et l
 .venv/bin/python -m retro_gaming.space_combat
 ```
 
-Déplacer le vaisseau avec les flèches gauche/droite ou **A/D**. Maintenir **Espace** pour tirer. Détruire toute la vague gagne ; un ennemi qui atteint le bas fait perdre. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce jeu est indépendant du parcours POC.
+Déplacer le vaisseau avec les flèches gauche/droite ou **A/D**. Maintenir **Espace** pour tirer. Esquiver les salves et utiliser les quatre abris : les tirs des deux camps les dégradent. Chaque envahisseur vaut 100 points ; une nouvelle vague arrive tant que le score cible n'est pas atteint. Les étoiles défilent derrière l'action. Un tir reçu ou une formation arrivée au vaisseau coûte une vie ; la manche dispose de **trois vies**. Après un impact, le vaisseau repart au centre, avec une courte pause.
+
+La victoire arrive au score cible, réglable avant la manche :
+
+```sh
+.venv/bin/python -m retro_gaming.space_combat --score-target 3000
+```
+
+La valeur initiale de 3 000 points et les cadences restent à calibrer en conditions d'animation. Le score se conserve entre les vagues et les vies. Les abris restent endommagés ; une invasion replace la formation en haut. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce jeu est indépendant du parcours POC.
 
 ## Jouer au labyrinthe
 
@@ -41,7 +49,9 @@ Déplacer le vaisseau avec les flèches gauche/droite ou **A/D**. Maintenir **Es
 .venv/bin/python -m retro_gaming.maze
 ```
 
-Déplacer le personnage avec les flèches ou **WASD** pour ramasser toutes les pastilles du plateau. Les murs bloquent le passage. Un adversaire parcourt les couloirs ; son contact termine la manche à une seule vie. Vider le plateau gagne. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Le labyrinthe et le combat spatial se lancent séparément du parcours POC.
+Déplacer le personnage jaune avec les flèches ou **WASD** pour vider le plateau. Les murs bloquent le passage. Quatre fantômes poursuivent, anticipent, alternent entre chasse et détour, ou explorent les coins du labyrinthe. Une pastille vaut 10 points ; une super-pastille vaut 50 points et rend les fantômes vulnérables pendant six secondes. Manger un fantôme ajoute 200 points ; il revient après deux secondes.
+
+Le contact avec un fantôme en chasse coûte une des **trois vies**. Le joueur et les fantômes repartent à leurs positions initiales après une courte pause ; les pastilles déjà collectées et le score restent acquis. Ramasser toutes les pastilles et super-pastilles gagne. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Le labyrinthe se lance séparément du parcours POC.
 
 ## Jouer au jeu de plateformes
 
@@ -49,7 +59,11 @@ Déplacer le personnage avec les flèches ou **WASD** pour ramasser toutes les p
 .venv/bin/python -m retro_gaming.platformer
 ```
 
-Dans ce niveau original inspiré des arcades 2D des années 80, déplacer le personnage à gauche et à droite avec les flèches ou **A/D**. Monter et descendre les échelles avec **↑/↓** ou **W/S** ; **Espace** fait sauter. Éviter les obstacles mobiles et atteindre la sortie en haut pour gagner. Le contact avec un obstacle ou une chute hors du parcours fait perdre. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce jeu se lance indépendamment du parcours POC, du combat spatial et du labyrinthe.
+Déplacer le personnage à gauche et à droite avec les flèches ou **A/D**. Monter et descendre les échelles avec **↑/↓** ou **W/S** ; **Espace** fait sauter. Parcourir les passerelles inclinées en zigzag jusqu'à la princesse au sommet. Un grand singe original prépare puis lance ses barriques : elles roulent, tombent aux extrémités et certaines empruntent les échelles. Leur cadence et leur vitesse augmentent pendant l'ascension. Deux ennemis de feu sont actifs dès le départ ; ils poursuivent le joueur et changent d'étage par les échelles. Le brasier du bas en fait apparaître un autre après quatorze secondes, jusqu'à trois ; le brasier lui-même est dangereux au contact. Cinq échelles placées uniquement aux extrémités imposent une montée en zigzag sur six poutrelles. Une dernière échelle au bord droit mène à la terrasse de la princesse, au-dessus du singe. Les pentes alternent : les barriques descendent à la rencontre du joueur, accélèrent dans la pente et chutent sous la gravité en bout de passerelle. Une seule barrique est déjà en circulation au début de la manche. Les lancers commencent à 4 secondes d’intervalle et restent espacés d’au moins 3,2 secondes au sommet ; les barriques partent à 85 pixels par seconde et leur vitesse est plafonnée à 125 pixels par seconde. Les flammes avancent plus lentement. Le saut est assez court pour franchir les dangers sans sauter un étage. Les poses de marche, de grimpe et de saut du personnage, ainsi que le lancer du singe et la rotation des barriques, suivent l'état réel du jeu.
+
+Une collision ou une chute coûte une des **trois vies** et ramène au départ avec une courte pause. Atteindre la princesse gagne la manche. Le résultat reste affiché jusqu'à **Échap** ou la fermeture de la fenêtre. Ce jeu se lance indépendamment du parcours POC, du combat spatial et du labyrinthe.
+
+Dans les trois jeux, une manche contient trois vies. Les trois tentatives prévues pour le défi de l'animation restent distinctes : une tentative correspond à une manche. Les lanceurs autonomes ne modifient pas la session POC.
 
 ## Configuration
 
@@ -85,11 +99,9 @@ Pour parcourir la session plus vite, lancer :
 
 Les tests de session contrôlent le temps sans attendre : accueil inactif, déclenchement unique, ordre possession puis Elf, temps consommé pendant la possession et messages persistants, seuils d’avertissement et d’alarme, traversée des deux seuils en une avancée, expiration dans les deux phases, remise à zéro et second cycle.
 
-Les tests du combat spatial pilotent la vague avec du temps et des entrées fournis par le test : déplacement, tir et destruction, mouvement des ennemis, victoire et échec persistants.
+Les tests des trois jeux passent par `Game.advance(temps, entrées) -> GameState`, sans fenêtre. Ils couvrent vies et réapparitions, résultats persistants, murs et collecte, super-pastilles et retour des quatre fantômes, tirs ennemis et joueur, abris, score et vagues, passerelles inclinées, saut et échelles, trajectoires des barriques et pression pendant l'ascension. Des scénarios à temps découpé différemment vérifient aussi collisions, transitions et commandes brèves.
 
-Les tests du labyrinthe pilotent la manche sans fenêtre avec du temps et des directions fournis par le test : déplacement, murs, collecte des pastilles, mouvement d'adversaire, victoire et échec persistants.
-
-Les tests du jeu de plateformes pilotent la manche sans fenêtre avec des directions, le saut et du temps fourni par le test : déplacement, plateformes, échelles, obstacles mobiles, victoire et échec persistants.
+La vérification automatisée ne remplace pas l'essai physique du clavier ni le réglage de la difficulté en salle. Voir [le compte rendu des jeux d'arcade](docs/arcade-validation.md) pour les preuves et les limites des essais.
 
 ### Comparer les deux ambiances
 

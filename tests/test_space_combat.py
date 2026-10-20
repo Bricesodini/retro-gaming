@@ -38,29 +38,107 @@ class SpaceCombatTests(unittest.TestCase):
         self.assertAlmostEqual(one.enemies[0].y, two.enemies[0].y, places=4)
         self.assertGreater(one.enemies[0].y, initial_y)
 
-    def test_destroying_the_whole_wave_wins_and_freezes_the_result(self):
+    def test_enemy_salvos_and_both_sides_damage_shelters(self):
         game = Game()
-        for _ in range(2000):
+        initial = sum(b.health for b in game.state.shelters)
+        fired = game.advance(1.3)
+        self.assertGreater(len(fired.enemy_shots), 0)
+        game.advance(3)
+        self.assertLess(sum(b.health for b in game.state.shelters), initial)
+        player = Game()
+        player.advance(1 / 3, PlayerInput(left=True))
+        player.advance(1, PlayerInput(shoot=True))
+        self.assertLess(sum(b.health for b in player.state.shelters), initial)
+
+    def test_incoming_shot_costs_a_life_before_formation_reaches_ship(self):
+        game = Game()
+        game.advance(1.3)
+        game.advance(344 / 360, PlayerInput(right=True))
+        hit = game.advance(1)
+        self.assertEqual(hit.lives, 2)
+        self.assertEqual(hit.player_x, 480)
+        self.assertGreater(hit.respawn_seconds, 0)
+        self.assertTrue(all(enemy.y < 200 for enemy in hit.enemies))
+
+    def test_score_threshold_can_win_with_enemies_still_on_screen(self):
+        game = Game(score_target=100)
+        game.advance(0.13, PlayerInput(right=True))
+        game.advance(0.01, PlayerInput(shoot=True))
+        won = game.advance(0.8)
+        self.assertEqual(won.result, Result.VICTORY)
+        self.assertEqual(won.score, 100)
+        self.assertGreater(len(won.enemies), 0)
+        self.assertEqual(game.advance(10), won)
+
+    def test_three_lives_respawn_and_final_result_persists(self):
+        game = Game()
+        previous = game.state.lives
+        for _ in range(3000):
+            state = game.advance(0.1)
+            if state.lives < previous:
+                self.assertEqual(state.player_x, 480)
+                self.assertEqual(state.lives, previous - 1)
+                previous = state.lives
+            if state.result is not Result.PLAYING:
+                break
+        self.assertEqual(state.lives, 0)
+        self.assertEqual(state.result, Result.DEFEAT)
+        self.assertEqual(game.advance(30, PlayerInput(shoot=True)), state)
+
+    def test_salvos_shelters_and_respawn_are_independent_of_frame_partition(self):
+        one, split = Game(), Game()
+        expected = one.advance(18.507)
+        for dt in (0.001, 0.106, 0.4, 8, 10):
+            split.advance(dt)
+        self.assertEqual(split.state, expected)
+
+    def test_zero_time_shoot_is_preserved_and_short_direction_taps_are_not_reversed(self):
+        game = Game()
+        self.assertEqual(len(game.advance(0, PlayerInput(shoot=True)).shots), 1)
+        self.assertEqual(len(game.advance(0, PlayerInput(shoot=True)).shots), 1)
+        game = Game()
+        game.advance(0.004, PlayerInput(right=True))
+        changed = game.advance(0.005, PlayerInput(left=True))
+        self.assertGreater(changed.player_x, 480)
+        self.assertEqual(game.advance(0, PlayerInput(right=True)), changed)
+
+    def test_zero_time_shot_starts_after_previous_elapsed_movement(self):
+        game = Game()
+        game.advance(0.004, PlayerInput(right=True))
+        fired = game.advance(0, PlayerInput(shoot=True))
+        self.assertAlmostEqual(fired.player_x, 481.44)
+        self.assertAlmostEqual(fired.shots[0].x, 481.44)
+        self.assertEqual(fired.shots[0].y, 546)
+        self.assertEqual(game.advance(0.005, PlayerInput(shoot=True)).shots, fired.shots)
+
+    def test_score_target_must_be_a_positive_integer(self):
+        for value in (0, -1, 1.5, float("inf"), True):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                Game(score_target=value)
+
+    def test_score_persists_across_waves_until_configured_threshold(self):
+        game = Game(score_target=1100)
+        saw_second_wave = False
+        for _ in range(20000):
             state = game.state
+            if state.wave > 1:
+                saw_second_wave = True
+                self.assertGreaterEqual(state.score, 1000)
             if state.result is not Result.PLAYING:
                 break
             target = min(state.enemies, key=lambda enemy: (-enemy.y, enemy.x))
-            game.advance(0.02, PlayerInput(
-                left=state.player_x > target.x + 8,
-                right=state.player_x < target.x - 8,
-                shoot=True,
-            ))
+            aim = target.x
+            danger = [b for b in state.enemy_shots if b.y > 390 and abs(b.x - state.player_x) < 45]
+            if danger:
+                bullet = max(danger, key=lambda b: b.y)
+                aim = bullet.x + 65 if bullet.x < 480 else bullet.x - 65
+            game.advance(0.02, PlayerInput(left=state.player_x > aim + 6,
+                                         right=state.player_x < aim - 6, shoot=True))
+        self.assertTrue(saw_second_wave)
         self.assertEqual(game.state.result, Result.VICTORY)
-        self.assertEqual(game.state.enemies, ())
+        self.assertGreaterEqual(game.state.score, 1100)
         finished = game.state
-        self.assertEqual(game.advance(30, PlayerInput(shoot=True, right=True)), finished)
-
-    def test_enemy_reaching_the_bottom_loses_and_freezes_the_result(self):
-        game = Game()
-        state = game.advance(200)
-        self.assertEqual(state.result, Result.DEFEAT)
-        self.assertTrue(any(enemy.y + 13 >= state.height for enemy in state.enemies))
-        self.assertEqual(game.advance(30, PlayerInput(shoot=True)), state)
+        self.assertEqual(game.advance(30, PlayerInput(shoot=True)), finished)
 
 
 if __name__ == "__main__":
