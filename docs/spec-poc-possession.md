@@ -1,3 +1,5 @@
+> **Archive de cadrage initial.** Cette spec décrit le premier POC de laboratoire et ne représente plus l’expérience intégrée actuelle. Le nouvel accueil au commissariat et le chronométrage à partir de l’arrivée de l’entité sont consignés dans [la conception actuelle](./conception.md). L’issue GitHub #1 reste la source de spécification et devra être synchronisée avant une nouvelle implémentation.
+
 ## Problem Statement
 
 L’équipe d’animation prépare un escape game dans lequel les participants traversent plusieurs salles, récupèrent un chiffre dans chacune, puis utilisent les chiffres pour accéder à un ascenseur. Celui-ci les conduit dans le « monde à l’envers », où une nouvelle confrontation les attend.

@@ -1,6 +1,6 @@
-# Laboratoire 1986 — borne rétro gaming
+# Commissariat — borne rétro gaming
 
-Application Pygame CE pour **macOS Apple Silicon**. Le laboratoire accueille l'équipe ; sa première touche lance une attente de dix secondes avant la possession, Elf propose trois hommages d'arcade des années 80 — **Pac-Man**, **Space Invaders** et **Donkey Kong** — puis la session conduit à une victoire de salle ou à un échec. Le chiffre de salle est révélé uniquement après une victoire. Les ambiances sonores et musiques sont originales et synthétisées par le code ; les portraits pixel art d'Elf et du Démogorgon sont livrés dans les ressources du jeu. Aucune ROM n'est requise.
+Application Pygame CE pour **macOS Apple Silicon**. L'accueil montre le dossier de personne disparue de Will Byers sur un poste informatique de commissariat. Entrée ouvre le dossier avec une courte animation ; trois secondes après son ouverture, le Démogorgon arrive et démarre l'unique chronomètre global. Elf propose trois hommages d'arcade des années 80 — **Pac-Man**, **Space Invaders** et **Donkey Kong** — puis la session conduit à une victoire de salle ou à un échec. Après une victoire, le chronomètre passe au vert et continue jusqu'à l'échéance. Le chiffre de salle est révélé uniquement après une victoire. Les ambiances sonores et musiques sont originales et synthétisées par le code ; les portraits pixel art de Will Byers, Elf et du Démogorgon sont livrés dans les ressources du jeu. Aucune ROM n'est requise.
 
 ## Installer et lancer
 
@@ -13,9 +13,9 @@ uv venv --python 3.11.11 --seed .venv
 .venv/bin/python -m retro_gaming
 ```
 
-`requirements.txt` fixe pygame-ce 2.5.8. Laisser la fenêtre au premier plan pour jouer. **Échap** ou le bouton de fermeture quitte l'application. Le parcours fonctionne dans une fenêtre de 1 200 × 760 pixels ; vérifier que l'écran de la borne peut l'afficher entièrement.
+`requirements.txt` fixe pygame-ce 2.5.8. Laisser la fenêtre au premier plan pour jouer. **Échap** ou le bouton de fermeture quitte l'application. La fenêtre de sortie est au format **1280 × 1024 (5:4)**, adapté à l'écran cathodique IBM E74. L'interface occupe ce format sans étirer les textes ni les portraits.
 
-Pour afficher ce même canevas logique en plein écran, lancer `.venv/bin/python -m retro_gaming --fullscreen`. Pygame le met à l'échelle de l'écran ; **Échap** quitte aussi ce mode. L'option concerne le parcours intégré et peut être combinée avec `--config` et `--test-mode`. Le démarrage reste en fenêtre par défaut.
+Pour afficher l'application en plein écran, lancer `.venv/bin/python -m retro_gaming --fullscreen`. La sortie utilise le format 5:4 de 1280 × 1024 ; **Échap** quitte aussi ce mode. L'option concerne le parcours intégré et peut être combinée avec `--config` et `--test-mode`. Le démarrage reste en fenêtre par défaut.
 
 Pour démarrer la borne directement en plein écran depuis le Finder, double-cliquer sur **Lancer le laboratoire.command** à la racine du projet. Le lanceur utilise l'environnement `.venv` et transmet les éventuelles options supplémentaires au jeu.
 
@@ -23,18 +23,19 @@ Pour démarrer la borne directement en plein écran depuis le Finder, double-cli
 
 | Phase | Action et affichage |
 | --- | --- |
-| Laboratoire | Diagnostics autonomes. Le chronomètre est inactif jusqu'à la première touche ordinaire ; elle lance la session et affiche un compte à rebours vert pendant les dix secondes avant l'arrivée du Démogorgon. |
-| Possession et Elf | À l'arrivée du Démogorgon, le compte à rebours devient rouge. Elf explique qu'il indique le temps restant pour repousser l'entité. Appuyer sur **Entrée** quand Elf le propose. |
+| Commissariat | Le dossier Will Byers est présenté avec une touche Entrée qui clignote. Le chronomètre est inactif à l'accueil. |
+| Ouverture du dossier | Entrée joue l'animation d'ouverture. Le dossier reste affiché trois secondes après l'animation, sans second compte à rebours. |
+| Possession et Elf | Le chronomètre global démarre à l'arrivée du Démogorgon. Son affichage apparaît sur l'écran de transmission d'Elf, en rouge ; il indique le temps restant pour repousser l'entité. Appuyer sur **Entrée** quand Elf le propose. |
 | Choix | Appuyer sur **1** (Pac-Man), **2** (Space Invaders) ou **3** (Donkey Kong). Les consignes restent affichées. |
 | Partie | Chaque jeu offre trois vies. Le temps global continue pendant la partie. Une victoire remporte immédiatement le défi de salle. |
 | Défaite d'un jeu | Le Démogorgon reprend le contrôle, Elf revient, puis **Entrée** ouvre le choix parmi les jeux encore disponibles. Un jeu perdu ne peut plus être choisi dans ce défi. |
 | Troisième défaite | Après la reprise du Démogorgon et le retour d'Elf, l'écran d'échec reste affiché jusqu'à la fin du temps. Aucun chiffre ni quatrième jeu. |
-| Victoire de salle | Après le résultat gagnant, le chronomètre disparaît pendant la révélation du chiffre. Appuyer sur **Entrée** pour ouvrir le mode libre ; les trois jeux sont alors disponibles, y compris ceux déjà tentés, avec un compte à rebours vert qui continue. |
-| Fin du temps | Avertissement au seuil configuré, puis signal de fin et message d'Elf pour rejoindre la salle suivante. La partie ou la scène en cours s'arrête. |
+| Victoire de salle | Elf révèle le chiffre en grand, remercie l’équipe et laisse entendre que l’entité pourrait revenir. Le même chronomètre reste visible en vert. Appuyer sur **Entrée** pour ouvrir le mode libre ; choisir parmi les trois jeux avec **1**, **2** ou **3**, puis appuyer sur **M** pendant une partie pour revenir au choix. |
+| Fin du temps | Avertissement au seuil configuré, puis signal de fin et message d'Elf pour rejoindre la salle suivante. La partie ou la scène en cours s'arrête ; cet écran reste affiché jusqu'à la remise à zéro de l'animateur. |
 
-Après les dix secondes d'attente, le Démogorgon apparaît avec son portrait pixelisé, un unique flash rouge bref, une déchirure du signal, des parasites CRT et un grondement bas. Chaque jeu a sa propre musique chiptune originale d'environ **15 secondes**, avec plusieurs phrases avant la reprise et un niveau de lecture réduit. Quand une tentative est perdue, la reprise du signal devient une confrontation animée entre Elf et le Démogorgon ; elle dure environ **2,4 secondes** avec la configuration par défaut, puis Elf revient proposer un jeu encore disponible.
+Trois secondes après l'ouverture du dossier, le Démogorgon apparaît avec son portrait pixelisé, un unique flash rouge bref, une déchirure du signal, des parasites CRT et un grondement bas. L'arrivée de l'entité démarre le chronomètre global. Chaque jeu a sa propre musique chiptune originale d'environ **15 secondes**, avec plusieurs phrases avant la reprise, à volume réduit. Quand une tentative est perdue, la reprise du signal devient une confrontation animée entre Elf et le Démogorgon ; elle dure environ **2,4 secondes** avec la configuration par défaut, puis Elf revient proposer un jeu encore disponible.
 
-Depuis **toute phase**, y compris le laboratoire en attente, **Contrôle + Option + Commande + Espace** remet la borne à zéro pour une nouvelle équipe. Ce raccourci a priorité sur le déclenchement : il arrête les sons, efface le temps, les vies, les jeux tentés, le résultat, le chiffre affiché et les alertes, puis rétablit le laboratoire. Après la remise à zéro, la prochaine touche ordinaire commence un nouveau parcours.
+Depuis **toute phase**, y compris le dossier en attente, **Contrôle + Option + Commande + Espace** remet la borne à zéro pour une nouvelle équipe. Ce raccourci a priorité sur l'ouverture du dossier : il arrête les sons, efface le temps, les vies, les jeux tentés, le résultat, le chiffre affiché et les alertes, puis rétablit le poste du commissariat. Après la remise à zéro, appuyer sur **Entrée** ouvre un nouveau dossier.
 
 ### Contrôles des jeux
 
@@ -86,7 +87,7 @@ Le fichier livré contient les durées et le chiffre ci-dessous ainsi qu'un obje
 }
 ```
 
-`warning_seconds` est le nombre de secondes **restant** lorsque l'avertissement est émis, et non une durée depuis le déclenchement. Les trois durées doivent être positives et finies ; la session doit être plus longue que les dix secondes d'attente et la durée de possession réunies, et l'avertissement doit rester inférieur à `session_seconds`. `room_digit` est un entier de 0 à 9. `variant` vaut exactement `Mystère` ou `Tension` ; les messages et le parcours restent les mêmes, tandis que Tension renforce progressivement la silhouette, les interférences et le grondement. Le délai avant l'arrivée est fixe : dix secondes. Les touches de modification seules, Échap et le raccourci de remise à zéro ne déclenchent pas la session. Le champ `trigger` des anciennes configurations doit être supprimé.
+`warning_seconds` est le nombre de secondes **restant** lorsque l'avertissement est émis, et non une durée depuis le déclenchement. Les trois durées doivent être positives et finies ; la durée de possession doit être inférieure à `session_seconds`, et l'avertissement doit rester inférieur à `session_seconds`. `room_digit` est un entier de 0 à 9. `variant` vaut exactement `Mystère` ou `Tension` ; les messages et le parcours restent les mêmes, tandis que Tension renforce progressivement la silhouette, les interférences et le grondement. L'ouverture du dossier puis l'attente de trois secondes précèdent le chronomètre et ne consomment pas le temps global. Les touches de modification seules, Échap et le raccourci de remise à zéro n'ouvrent pas le dossier. Le champ `trigger` des anciennes configurations doit être supprimé.
 
 | Jeu | Réglage numérique | Sens et valeur livrée |
 | --- | --- | --- |

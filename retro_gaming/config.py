@@ -1,4 +1,4 @@
-"""External calibration for the laboratory demonstration."""
+"""External calibration for the retro gaming session."""
 
 import json
 import math
@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pygame
 
-from retro_gaming.session import ARRIVAL_DELAY_SECONDS
 
 
 RESET_KEY = pygame.K_SPACE
@@ -115,17 +114,12 @@ def load_config(path: Path) -> Config:
         if variant not in ("Mystère", "Tension"):
             raise ValueError("variant inconnue : choisir Mystère ou Tension")
         if "trigger" in data:
-            raise ValueError("trigger n'est plus configurable : une touche démarre la session")
+            raise ValueError("trigger n'est plus configurable : Entrée ouvre le dossier")
         if any(not math.isfinite(value) or value <= 0 for value in
                (session_seconds, possession_seconds, warning_seconds)):
             raise ValueError("les durées de session, possession et avertissement doivent être positives et finies")
         if possession_seconds >= session_seconds:
             raise ValueError("la possession doit être plus courte que la session")
-        if ARRIVAL_DELAY_SECONDS + possession_seconds >= session_seconds:
-            raise ValueError(
-                "la session doit dépasser le délai d'arrivée de 10 secondes "
-                "et la durée de possession réunis"
-            )
         if warning_seconds >= session_seconds:
             raise ValueError("l’avertissement doit être à l’intérieur de la session")
         return Config(session_seconds, possession_seconds, warning_seconds,

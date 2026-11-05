@@ -1,1 +1,1 @@
-"""Laboratoire 1986, premier POC de la borne rétro gaming."""
+"""Borne rétro gaming et dossier numérique du commissariat."""

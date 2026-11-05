@@ -6,7 +6,8 @@ from enum import Enum
 
 
 class Phase(Enum):
-    LABORATOIRE = "laboratoire"
+    ACCUEIL = "accueil"
+    DOSSIER = "dossier"
     POSSESSION = "possession"
     ELF = "elf"
     CHOIX = "choix"
@@ -35,7 +36,8 @@ class SessionState:
 
 
 GAMES = ("maze", "space_combat", "platformer")
-ARRIVAL_DELAY_SECONDS = 10
+DOSSIER_OPEN_SECONDS = 0.7
+ENTITY_DELAY_SECONDS = 3
 
 
 def _chosen_game(action: str | None) -> str | None:
@@ -48,7 +50,8 @@ def _chosen_game(action: str | None) -> str | None:
 class Session:
     def __init__(self, session_seconds: float = 300, possession_seconds: float = 12,
                  warning_seconds: float = 60, room_digit: int = 4,
-                 signal_seconds: float = 0):
+                 entity_delay_seconds: float = ENTITY_DELAY_SECONDS,
+                 dossier_open_seconds: float = DOSSIER_OPEN_SECONDS):
         if any(not math.isfinite(value) or value <= 0 for value in
                (session_seconds, possession_seconds, warning_seconds)):
             raise ValueError("Les durées de session, de possession et d'avertissement doivent être positives et finies.")
@@ -56,18 +59,21 @@ class Session:
             raise ValueError("La possession doit être plus courte que la session.")
         if warning_seconds >= session_seconds:
             raise ValueError("L'avertissement doit être avant la fin et à l'intérieur de la session.")
-        if not math.isfinite(signal_seconds) or signal_seconds < 0:
-            raise ValueError("Le délai d'arrivée doit être positif ou nul et fini.")
-        if signal_seconds + possession_seconds >= session_seconds:
-            raise ValueError("La session doit dépasser le délai d'arrivée et la durée de possession réunis.")
+        if not math.isfinite(entity_delay_seconds) or entity_delay_seconds < 0:
+            raise ValueError("Le délai d'arrivée de l'entité doit être positif ou nul et fini.")
+        if not math.isfinite(dossier_open_seconds) or dossier_open_seconds <= 0:
+            raise ValueError("La durée d'ouverture du dossier doit être positive et finie.")
         if type(room_digit) is not int or not 0 <= room_digit <= 9:
             raise ValueError("Le chiffre de salle doit être un entier de 0 à 9.")
         self.session_seconds = session_seconds
         self.possession_seconds = possession_seconds
         self.warning_seconds = warning_seconds
         self.room_digit = room_digit
-        self.signal_seconds = signal_seconds
+        self.entity_delay_seconds = entity_delay_seconds
+        self.dossier_open_seconds = dossier_open_seconds
         self._active_seconds: float | None = None
+        self._dossier_opened = False
+        self._dossier_elapsed = 0.0
         self._warning_sent = False
         self._alarm_sent = False
         self._choice_open = False
@@ -87,6 +93,8 @@ class Session:
             raise ValueError("Le temps écoulé doit être positif ou nul et fini.")
         if animator_action == "reinitialiser":
             self._active_seconds = None
+            self._dossier_opened = False
+            self._dossier_elapsed = 0.0
             self._warning_sent = False
             self._alarm_sent = False
             self._choice_open = False
@@ -98,11 +106,19 @@ class Session:
             self._failed = False
             self._won = False
             self._free_open = False
-            return SessionState(Phase.LABORATOIRE, None, ())
+            return SessionState(Phase.ACCUEIL, None, ())
         if self._active_seconds is None:
-            if animator_action != "declencher_mystere":
-                return SessionState(Phase.LABORATOIRE, None, ())
-            self._active_seconds = 0
+            if not self._dossier_opened:
+                if animator_action != "ouvrir_dossier":
+                    return SessionState(Phase.ACCUEIL, None, ())
+                self._dossier_opened = True
+                self._dossier_elapsed = 0.0
+                return SessionState(Phase.DOSSIER, None, ())
+            self._dossier_elapsed += elapsed_seconds
+            prelude_seconds = self.dossier_open_seconds + self.entity_delay_seconds
+            if self._dossier_elapsed < prelude_seconds:
+                return SessionState(Phase.DOSSIER, None, ())
+            self._active_seconds = max(0.0, self._dossier_elapsed - prelude_seconds)
         else:
             self._active_seconds += elapsed_seconds
 
@@ -122,11 +138,7 @@ class Session:
                                 ("ELF // Le temps est écoulé. Rejoignez la salle suivante.",),
                                 timer_visible=not self._free_open,
                                 room_result="victory" if self._won else "defeat" if self._failed else None)
-        if elapsed < self.signal_seconds:
-            return SessionState(Phase.LABORATOIRE, remaining, tuple(events),
-                                timer_visible=True,
-                                arrival_seconds=self.signal_seconds - elapsed)
-        possession_elapsed = elapsed - self.signal_seconds
+        possession_elapsed = elapsed
         if possession_elapsed < self.possession_seconds:
             messages = ()
             if possession_elapsed >= self.possession_seconds * 0.35:
@@ -134,7 +146,7 @@ class Session:
             if possession_elapsed >= self.possession_seconds * 0.65:
                 messages += ("ELF // Je vous entends. Restez ensemble.",)
             return SessionState(Phase.POSSESSION, remaining, tuple(events), messages,
-                                timer_visible=True)
+                                timer_visible=False)
         if self._game_result == "defeat" and not self._won:
             self._lost_games.append(self._active_game)
             self._active_game = None
@@ -169,16 +181,24 @@ class Session:
                 self._free_open = True
             else:
                 return SessionState(Phase.VICTOIRE, remaining, tuple(events), (
-                    "ELF // La salle est libérée. Le Démogorgon reviendra.",
+                    "ELF // Merci de m'avoir aidée.",
+                    "Il est parti… mais je ne crois pas que ce soit fini.",
                     f"CHIFFRE DE SALLE : {self.room_digit}",
                     "Les trois jeux sont maintenant libres. Appuyez sur ENTREE.",
-                ), timer_visible=False, room_result="victory")
+                ), timer_visible=True, room_result="victory")
         if self._active_game is not None:
+            if self._free_open and animator_action == "changer_jeu":
+                self._active_game = None
+                self._game_result = None
+                return SessionState(Phase.LIBRE, remaining, tuple(events),
+                                    ("ELF // Choisissez un jeu.",), GAMES,
+                                    timer_visible=True, room_result="victory",
+                                    free_mode=True)
             if self._won and self._game_result is not None:
                 self._active_game = None
                 self._game_result = None
                 return SessionState(Phase.LIBRE, remaining, tuple(events),
-                                    ("ELF // Profitez des jeux avant le départ.",), GAMES,
+                                    ("ELF // Choisissez un jeu.",), GAMES,
                                     timer_visible=True,
                                     room_result="victory", free_mode=True)
             if self._game_result is None and game_result in ("victory", "defeat"):
@@ -200,7 +220,7 @@ class Session:
                 return SessionState(Phase.JEU, remaining, tuple(events), active_game=game,
                                     timer_visible=True, room_result="victory", free_mode=True)
             return SessionState(Phase.LIBRE, remaining, tuple(events),
-                                ("ELF // Profitez des jeux avant le départ.",), GAMES,
+                                ("ELF // Choisissez un jeu.",), GAMES,
                                 timer_visible=True,
                                 room_result="victory", free_mode=True)
         if self._choice_open:
@@ -226,8 +246,6 @@ class Session:
                 "Choisissez un autre jeu pour repousser le Démogorgon.",
             ), timer_visible=True)
         return SessionState(Phase.ELF, remaining, tuple(events), (
-            "ELF // C'est moi, Elf. Je retiens cette présence.",
-            "Le Démogorgon a pris le contrôle du terminal.",
-            "Le compte à rebours rouge indique le temps qu'il vous reste pour la repousser.",
-            "Appuyez sur ENTREE pour choisir un jeu.",
+            "ELF // Je le repousse, mais je ne tiendrai pas longtemps. Aidez-moi !",
+            "Appuyez sur ENTREE pour m'aider.",
         ), timer_visible=True)

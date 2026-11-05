@@ -1,4 +1,4 @@
-"""Original procedural chiptunes and scene beds for Laboratoire 1986."""
+"""Original procedural chiptunes and scene beds for the retro gaming session."""
 
 from array import array
 import math
@@ -119,6 +119,6 @@ class Soundtrack:
         if scene is None:
             self.channel.fadeout(260)
         elif scene in self._sounds:
-            volume = 0.42 if scene.startswith("game:") else 0.68 if scene == "entity" else 0.58
+            volume = 0.30 if scene.startswith("game:") else 0.68 if scene == "entity" else 0.58
             self.channel.set_volume(volume)
             self.channel.play(self._sounds[scene], loops=-1, fade_ms=120)
